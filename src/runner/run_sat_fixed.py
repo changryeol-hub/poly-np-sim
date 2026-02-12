@@ -46,6 +46,7 @@ import main.log_ext as log_ext
 
 
 def run(tape_string):
+    tape_string=tape_string.strip()
     if (tape_string.find("#")<0): 
         log.warn("Empty or Wrong Input!")
         return None
