@@ -113,7 +113,7 @@ def AddExtendableEdgeOnCeilingEdges(H, S, Ev):
                     Q.update(H.ISuccedent(w))
                 elif w.next_index()==u.index():
                     Ec=dcg.filterWithPathForward(H,e,H.incomingEdgeOf(w))
-                    Ev.update(Ec)
+                    for ec in Ec: Ev.add((e,ec))
             
 def ExtendEdgeDirectlyWithWalk(G, H, W, Ev):
     
@@ -159,7 +159,7 @@ def ExtendEdgeDirectlyWithWalk(G, H, W, Ev):
 
             if isNewEdge and ep is not None and v.next_index()!=u.index():
                 if H.isMergingEdge(ep) or H.isPseudoCombiningEdge(ep) or H.isCombiningEdge(ep):
-                    Ev.add(e)
+                    Ev.add((None,e))
             #log.log(VERBOSE, f"{e}")
             Ep={ep}
             En=G.GetNextEdgesAbovePreds(v, Ep)
@@ -188,14 +188,18 @@ def CollectRestrictedBoundaryEdges(G,H, Ev):
     Q=set()             # the empty set of edges
 
     log.log(VERBOSE, f"Collecting For:{len(Ev)}")
-    for e in Ev:        #▷ For all last extended edges
+    
+    for ep,e in Ev:        #▷ For all last extended edges
         u,v=e; 
-        if v.next_index()!=u.index() and v.state() not in ['Reject', 'Accept']:
+        if v.next_index()==u.index() or v.state() in ['Reject', 'Accept']:
+            continue
+        if ep is None:
             Ep=dcg.GetForwardWeakCeilingAdjacentEdges(H,e)
             Ep=dcg.filterWithPathBackward(H, e, Ep)
-            En=G.GetNextEdgesAbovePreds(v, Ep)
-            for f in En:
-                if not H.hasEdge(f): Q.add(f);
+        else: Ep={ep}
+        En=G.GetNextEdgesAbovePreds(v, Ep)
+        for f in En:
+            if not H.hasEdge(f): Q.add(f);
 
     return Q
 
