@@ -46,7 +46,7 @@ def read_file(filename):
     with open(filename,'r') as f:
         lines = f.readlines()
 
-    # 주석(c) 줄 제거, p cnf 줄은 남겨둠
+    # Strip lines containing comments (c), while preserving the 'p cnf' header.
     content_lines = [line for line in lines if not line.startswith('c')]
     first_line = content_lines[0] if content_lines else ''
     content = ''.join(content_lines[1:])
@@ -56,10 +56,10 @@ def read_file(filename):
 def parse_input(filename):
     first_line, content = read_file(filename)
 
-    # CNF 포맷 판정: 확장자가 .cnf 이거나 첫 줄에 'p cnf' 존재
+    # Identify CNF format: Check for .cnf extension or 'p cnf' in the header line.
     if filename.lower().endswith('.cnf') or 'p cnf' in first_line.lower():
         log.info("Detected CNF file format")
-        # CNF 파일 처리
+        # Process CNF file
         tape = content.replace("0\n%\n0","").replace("0\n","&").strip()+'#'
         tape = tape.replace(" ","_").replace("_&","&")
     else:
@@ -67,8 +67,6 @@ def parse_input(filename):
         tape = content.strip()
         if '#' not in tape:
             raise ValueError("Invalid tape format: missing '#' terminator")
-        temp = tape.rstrip('#').replace('-','').replace('&',' ').split()
-        m = max(map(int,temp))
         tape = tape.replace(" ","_").replace("_&","&")
 
     return tape
@@ -79,10 +77,8 @@ def main():
     filename = args.filename
 
     tape_string = parse_input(filename)
-    print(tape_string)
     temp = tape_string.rstrip('#').replace('-','').replace('&','_').split('_')
-    print(temp)
-    m = max(map(int,temp))
+    m = max(map(int,filter(lambda x: x.isdecimal(), temp)))
     log.info(f"Processing {filename} with m={m}")
     result = SimulateVerifierForAllCertificates(tape_string, m,TM.INIT_STATE, TM.symbols, TM.delta, TM.states, TM.certSymbols)
     print(result)
