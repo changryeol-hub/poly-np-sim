@@ -1,5 +1,5 @@
 """
-cnf_sat_runner.py
+cnf_file_runner.py
 
 Purpose:
 - Run the Fixed-State SAT Verifier Turing Machine on benchmark SAT instances.
@@ -7,7 +7,7 @@ Purpose:
 - Intended for performance/validation on small to medium SAT instances.
 
 Usage:
-    $ python cnf_sat_runner.py path_to_file --loglevel DEBUG
+    $ python cnf_file_runner.py path_to_file --loglevel DEBUG
 
 Input formats:
 1. DIMACS CNF format (.cnf):

@@ -101,7 +101,7 @@ def GetStepPendentEdgesWithReachableGraph(G, C, V0, Ef):
     
 
 
-def ComputeFeasibleGraph(G, V0, Ef, Er_=set()):     #▷ G: non-empty computation graph
+def ComputeFeasibleGraph(G, V0, Ef):     #▷ G: non-empty computation graph
     log.log(VERBOSE,f"\t\tStart to Compute feasible graph |E(G)|={G.size()} with respect to {Ef}")   
     
     C = ComputeCoverEdges(G,Ef )        #▷ Initialize cover edge set from final edges
@@ -110,7 +110,7 @@ def ComputeFeasibleGraph(G, V0, Ef, Er_=set()):     #▷ G: non-empty computatio
     
     Ef_=Ef.copy()         
     
-    T=collections.deque(Er|Er_)
+    T=collections.deque(Er)
    
     log.log(VERBOSE,f"\t\tAfter Compute Step-pendent Edges |E(H)|={H.size()}")
     while len(T)>0:   #▷ Repeat until no change occurred or the graph becomes empty
