@@ -27,9 +27,12 @@ SOFTWARE.
 
 ## Academic and Research Use Notice
 
-This software and associated scripts are released for purely academic and research purposes, primarily to enable verification, reproduction, and exploration of the results presented in the accompanying **P=NP proof and implementation study**.
+This software and associated scripts are released for purely academic and research purposes, primarily to enable verification, reproduction, and exploration of the results presented in the accompanying **P=NP proof and implementation study**:
 
-The implementation is intended for **experimental validation and educational use**, and is not yet optimized for practical SAT/Subset-Sum solving or commercial applications.
+*   **Implementation Paper:** [arXiv:2602.10991](https://arxiv.org/abs/2602.10991) (Preprint)
+*   **Archived Record:** [Zenodo (18664961)](https://zenodo.org/records/18664961)
+
+The implementation is intended for **experimental validation and educational use**, and is not yet optimized for practical SAT/Subset-Sum solving or commercial applications. 
 
 By releasing this code, the authors aim to support **transparency, peer verification, and further research** in computational complexity and Turing Machine simulations.
 
