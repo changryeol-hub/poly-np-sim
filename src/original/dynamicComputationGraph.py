@@ -71,17 +71,17 @@ class TransitionCase(set):
 
         (self.dir, self.next_index) = (d, d + self.index)
         (self.next_state, self.output) = (q_, s_)
-        if(self.tier==0): self.add(vertex(self,None))
 
     def vertex(self,P):
         if(self.tier==0):
-            if(P is not None): print("tier0:",P); return None
+            if(P is not None): log.error(f"Floor node cannot have precedent:{P}"); return None
+            if(len(self)==0): self.add(vertex(self,None))
             return list(self)[0]
 
         assert P.index==self.index, "Wrong index for vertex"
         assert P.tier==self.tier-1, "Wrong tier for vertex"
 
-        items=list(filter(lambda x:x.state==P.state and x.symbol==P.symbol,self))
+        items=list(filter(lambda x:x.last_state()==P.state and x.last_symbol()==P.symbol, self))
         if(len(items)>0): return items[0]
         else: v=vertex(self,P); self.add(v); return v
 
