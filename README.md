@@ -96,27 +96,38 @@ project_root/
 
 ### Fixed-State SAT Verifier
 - Constant state set, independent of input size.
-- Fully compatible with the feasible-graph verification framework.
+- Fully compatible with NP verifier simulation framework.
+- Allows testing on larger or specially structured SAT instances.
 - `run_sat_fixed.py` provides both interactive and programmatic usage.
+- Also provides `cnf_file_runner.py` to support the CNF file format
 
 ### Input-Dependent SAT Verifier
 - State set depends on the maximum value in the input tape.
-- Allows testing on larger or specially structured SAT instances.
-- Accessible via `run_sat_dynamic.py`.
+- `run_sat_dynamic.py` provides both interactive and programmatic usage.
 
 ### Subset-Sum Verifier
 - Handles classic Subset-Sum instances in the fixed-state framework.
 - `run_subsetsum.py` supports programmatic and interactive execution.
 
 ### Benchmark Runner
-- `cnf_file_runner.py` can process standard DIMACS CNF files or legacy tape files.
+- `cnf_file_runner.py` can process standard DIMACS CNF files or input tape format files.
 - Automatically detects file type and constructs a verifier tape string.
+- The input tape format is restricted to processing one input at a time.
 
-### Original Test Scripts
+
+### Test Suites and Validation Scripts
 - Located in the `tests/` folder.
-- Based entirely on the original (pre-main) implementation.
-- Used primarily for **TM verification and regression** on small test cases.
-- These scripts are **not optimized for runtime**, especially on larger inputs.
+- NP Verifier Simulation Tests: Scripts named test_main_* perform comprehensive framework validation for each specific Turing Machine (TM).
+	- Include unit tests for the TMs themselves.
+- Original Implementation Tests: Scripts prefixed with test_original_* validate the version from the original paper.
+	- Based entirely on the original (pre-main) implementation.
+	- Used primarily for **TM verification and regression** on small test cases.
+	- These scripts are **not optimized for runtime**, especially on larger inputs.
+	- Note: These scripts require significant execution time and are primarily intended for baseline verification.
+- Hybrid Validation: Scripts prefixed with test_hybrid_* test a combination of the original and current implementations.
+	- test_hybrid_fixed(original_feasible).py is computationally feasible as only the graph construction follows the original version.
+	- Other hybrid configurations demand extensive runtime, similar to the original test scripts.
+- Test Case Definitions: sat_test_cases.py and subsetsum_test_cases.py provide the standardized input sets used across all test suites.
 
 
 ## Usage
@@ -138,7 +149,7 @@ python cnf_file_runner.py path/to/file.cnf --loglevel DEBUG
 
 ```
 
-### Tape Input Format
+### SAT Tape Input Format
 - Tape symbols use `_` to separate numbers and `&` to separate elements.
 - Each tape must end with `#`.
 
@@ -151,7 +162,19 @@ python cnf_file_runner.py path/to/file.cnf --loglevel DEBUG
 - Standard DIMACS CNF format.
 - Clauses end with `0`.
 - File may optionally end with `%`.
-- `cnf_file_runner.py` converts CNF files into a SAT verifier tape automatically.
+- `cnf_file_runner.py` converts CNF files into a SAT verifier tape format automatically.
+
+### SumOfSubset Tape Input format:
+- The tape format is `<target>_@_<elements>#<certificate>`.
+- `target` is the integer sum to achieve.
+- `elements` is a list of integers separated by '_'.
+- `certificate` is the proposed subset (also integers separated by '_') to verify.
+- Each input tape must terminate with the '#' symbol.
+
+**Example:**
+```
+28_@_1_3_5_7_10_20#
+```
 
 ### Sample Inputs
 - `input/` folder contains small example files for SAT, Subset-Sum, and CNF.
