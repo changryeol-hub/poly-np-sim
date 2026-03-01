@@ -75,6 +75,7 @@ def PruneWalk(G_U,G,V0,Ef,W, preserveObsolete):
     log.log(VERBOSE,f"\t\tBefore Walk prunded edge by {e_}. PreserveObsoleteWalk:{preserveObsolete} |E(G)|={G.size()}")
     G.removeEdge(e_)
     G_ = fg.ComputeFeasibleGraph(G,V0, Eo|Ef) #▷ Remove e′ from feasible graph
+    G.addEdge(e_)  # This is required to restrore original graph.
     if G_.size()>0:
         for e in Eo:
             if G_.hasEdge(e): G_.removeEdge(e)        #G[E(G)-Eo]
