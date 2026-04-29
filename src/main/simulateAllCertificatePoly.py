@@ -9,24 +9,43 @@ Purpose:
 
 Main Classes/Functions:
 - NPDynamicComputationGraph: Extends DynamicComputationGraph for NP verification with certificate handling.
-- SimulateVerifierForAllCertificates(L, m, q0, Σ, δ, Q, Γ=None, qacc='Accept', qrej='Reject', certSymbols=""): 
+- SimulateVerifierForAllCertificates(L, m, q0, Σ, δ, Q, Γ=None, qacc='Accept', qrej='Reject', certSymbols="", timeout=None): 
     Simulates the verifier deterministically on input string L with certificate length m and returns 'Yes' or 'No'.
     If Γ is not provided, it defaults to Σ ∪ {ϵ}. Providing a custom Γ allows for auxiliary tape symbols required for specific TM transitions.
-    Now supports optional custom acceptance/rejection states.
+    Now supports optional 'timeout' and custom acceptance/rejection states.
 - ExtendEdgeDirectlyWithWalk, ExtendByVerifiableEdges, IsAcceptedOnFootmarks:
     Core routines for traversing and extending the computation graph along feasible walks.
 - printStat(H, sec): Prints statistics of computation graph usage and timing.
 
 Usage:
-    Import and call SimulateVerifierForAllCertificates with appropriate parameters for the target NP verifier.
+    Import and call SimulateVerifierForAllCertificates with appropriate parameters 
+    for the target NP verifier. 
+
+    Interactive Controls during Simulation:
+    - [Esc] Key: Aborts the simulation immediately and returns 'User Aborted'.
+    - Any Other Key: Displays current real-time progress (Total Edges, Candidate Queue).
+
+    Parameters:
+    - timeout (float, optional): Maximum execution time in seconds. 
+      If not provided (None), the simulation runs until completion or manual abort.
+      Returns 'TimeOut' if the limit is exceeded.
+
+Requirements:
+    - External Library: `pynput` is required for keyboard interaction.
+      Install via: `python -m pip install pynput`
+    - Internal Modules: Requires `main.dynamicComputationGraph`, `verificationWalk`, 
+      and `feasibleGraph`.
 
 Notes:
-- Requires `main.dynamicComputationGraph`, `verificationWalk`, and `feasibleGraph` modules.
-- Designed for research and verification of P=NP framework; not optimized for general SAT/Subset-Sum performance.
+    - Designed for research and verification of the P=NP framework.
+    - All simulation results are produced within a deterministic polynomial-time 
+      structure unless externally aborted or timed out.
 """
 
 import collections
 import copy, time, datetime
+import threading, time
+from pynput import keyboard
 
 from . import dynamicComputationGraph as dcg
 from . import verificationWalk as vw
@@ -48,6 +67,9 @@ class NPDynamicComputationGraph(dcg.DynamicComputationGraph):
         self.qrej=qrej
         if certSymbols=="": self.CertSymbols=list(Σ)
         else: self.CertSymbols=certSymbols
+        
+        self.isAborted=False
+        self.resume_event=None
         
         dcg.initialize(self.Q, self.Γ, self.δ)
         
@@ -146,12 +168,14 @@ def ExtendEdgeDirectlyWithWalk(G, H, W, Ev):
 
     T.append((e, S, R))
 
-    while len(T)>0:   #should add any edge if its succedent is folding node
+    while len(T)>0 and not G.isAborted:   #should add any edge if its succedent is folding node
         e,S,R=T.pop()
         u,v=e
         
         if H.hasEdge(e): continue
- 
+        if G.resume_event.is_set(): 
+            log.info(f"User Info: Total Edges extended:{H.size()}, Continuing direct edge extension from {e}.")
+            G.resume_event.clear()
         log.debug(f"Restarted from:{e}")
         walkLength=0
         while(True):
@@ -239,15 +263,16 @@ def CollectRestrictedBoundaryEdges(G, H, V0, Ev):
     return Q
 
 
-
 def ExtendByVerifiableEdges(G, V0, Q0, H, Ev):
     Ef=set()
     
     Q=collections.deque(Q0)
-    while len(Q)>0:
+    while len(Q)>0 and not G.isAborted:
         ef=Q.popleft()
         if H.hasEdge(ef): continue
-        
+        if G.resume_event.is_set(): 
+            log.info(f"User Info: Total Edges extended:{H.size()}, Candidate edges remained:{len(Q)}")
+            G.resume_event.clear()
         H.addEdge(ef)
         H.cntCandidateForVerification+=1
         W=vw.VerifyExistenceOfWalk(H, V0, ef)
@@ -276,6 +301,7 @@ def IsAcceptedOnFootmarks(G,H, V0):     # ▷ qacc, qrej is a constance
         if len(Q)>0:
             prevCntCandiate=H.cntCandidateForVerification; prevCntExtendedByVerification=H.cntExtendedByVerification
             R=ExtendByVerifiableEdges(G, V0, Q, H, Ev) #▷ Ev: verified extension edges
+            if G.isAborted: return None
             if isRetry:
                 H.cntRetry+=1;               
                 H.cntGeneralCandidateForVerification+=H.cntCandidateForVerification-prevCntCandiate
@@ -290,7 +316,7 @@ def IsAcceptedOnFootmarks(G,H, V0):     # ▷ qacc, qrej is a constance
         
         Q=CollectRestrictedBoundaryEdges(G,H, V0, Ev)    #▷ Eb: newly collected boundary edges
         log.debug(f"Collected Boundary Edges:{len(Q)}")
-
+        if G.isAborted: return None
     return False
 
 def printStat(H, sec):
@@ -311,7 +337,45 @@ def printStat(H, sec):
     print("Elapsed time:", resultTime)
 
 
-def SimulateVerifierForAllCertificates(L, m, q0, Σ, δ, Q, Γ=None, qacc='Accept', qrej='Reject',  certSymbols=""):
+def IsAcceptedOnFootmarksWrapper(G, H, V0, timeout, resultList):
+    
+    result=IsAcceptedOnFootmarks(G, H, V0)
+    resultList.append(result)
+    
+
+def simulate(G, H, V0, timeout):
+    
+    G.resume_event=threading.Event()
+    def on_key_pressed(key):
+        nonlocal G
+        if key==keyboard.Key.esc:
+            G.isAborted=True
+            G.resume_event.set()
+            return False
+        else: G.resume_event.set()
+            
+    listener=keyboard.Listener(on_press=on_key_pressed)
+    
+    resultList=[]
+    task=threading.Thread(target=IsAcceptedOnFootmarksWrapper, args=(G,H,V0,timeout, resultList))
+    task.start()
+    listener.start()
+    task.join(timeout=timeout)
+    listener.stop()
+    if task.is_alive():
+        G.isAborted=True
+        G.resume_event.set()
+        task.join()
+        return f'TimeOut over {timeout/60} m'
+        
+    
+    result=resultList.pop()
+    if result is None: return 'User Abored'
+    elif result: return 'Yes'
+    else: return 'No'
+
+
+def SimulateVerifierForAllCertificates(L, m, q0, Σ, δ, Q, Γ=None, qacc='Accept', qrej='Reject',  certSymbols="", timeout=None):
 
     G=NPDynamicComputationGraph(L, m, q0, Q, Σ, δ, Γ, qacc, qrej, certSymbols)
 
@@ -323,16 +387,17 @@ def SimulateVerifierForAllCertificates(L, m, q0, Σ, δ, Q, Γ=None, qacc='Accep
     print("Tape input length:", len(L))
     print("Certificate length:",m)
     print(f"State count: {len(G.Q)}, symbol count: {len(G.Γ)}")
+
     start = time.time()
-    result=IsAcceptedOnFootmarks(G,H, {v0}) # ▷ v0:Initial vertex where state(v0) = q0
+    result=simulate(G,H, {v0}, timeout) # ▷ v0:Initial vertex where state(v0) = q0
     end = time.time()
-    if result and m > 0:
+
+    if result=='Yes' and m > 0:
         print("Witness for accepted certificate:", G.yesWitness.split('#')[1])
     
     printStat(H, end-start)
     
-    if result: return 'Yes'
-    else: return 'No'
+    return result
 
 
 

@@ -1,4 +1,4 @@
-c 변수 10개, 절 25개 (Strict 3-SAT, UNSAT Case)
+c veraible:10, clause:25 (Strict 3-SAT, UNSAT Case)
 p cnf 10 25
 1 2 3 0
 1 2 -3 0

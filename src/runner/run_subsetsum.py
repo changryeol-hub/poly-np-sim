@@ -21,8 +21,8 @@ Limitations:
   multithreaded execution is not supported. Use separate processes if needed.
 
 Usage:
-    $ python run_subsetsum.py            # interactive mode
-    run(tape_string)                     # programmatic execution
+    $ python run_subsetsum.py [--timeout MIN]   # interactive mode
+    run(tape_string, timeout=1800)              # programmatic execution - timeout is optional (seconds)
 
 Input format:
 - The tape format is `<target>_@_<elements>#<certificate>`.
@@ -33,7 +33,6 @@ Input format:
 Example:
     "28_@_1_3_5_7_10_20#1_20_7_;"
 """
-import logging as log
 import os, sys
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -44,16 +43,24 @@ import main.dynamicComputationGraph as dcg
 from main.simulateAllCertificatePoly import *
 import verifierTM.SubsetSumTM as TM
 import main.log_ext as log_ext
+log=log_ext.get_logger(__name__)
 
+def setup_argument():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--timeout', type=int, default=None, help="timeout in minutes (default: no timeout)")
+    log_ext.setup_logging(parser)
+    args= parser.parse_args()
+    if args.timeout is not None: args.timeout*=60
+    return args
 
-def run(tape_string):
+def run(tape_string, timeout=None):
     tape_string=tape_string.strip()
     if (tape_string.find("#")<0 or tape_string.find("@")<0):
         log.warn("Empty or Wrong Input!")
         return None
     m=tape_string.find("#")-tape_string.find("@");
     result = SimulateVerifierForAllCertificates(tape_string, m, TM.INIT_STATE, TM.inputSymbols, TM.delta, TM.states, 
-            TM.symbols, TM.ACCEPT_STATE, TM.REJECT_STATE, TM.certSymbols)
+            TM.symbols, TM.ACCEPT_STATE, TM.REJECT_STATE, TM.certSymbols, timeout=timeout)
     return result
 
 def test_machine():
@@ -77,15 +84,15 @@ def test_machine():
         assert (result=='Yes')==answer[i]
     log.info("Turing machined Confirmed.\n")
 
-def main_interactive():
+def main_interactive(timeout):
     while True:
         tape=input("Enter input of Sum of Subset(Ex:'28_@_42_20_3_5#').\n")
         if "#" not in tape or '@' not in tape:
             print("Empty or Wrong Input!")
             return
-        print(run(tape), "\n")
+        print(run(tape, timeout), "\n")
 
 if __name__ == "__main__":
-    log_ext.setup_logging()
+    args=setup_argument()
     if __debug__: test_machine()
-    main_interactive()
+    main_interactive(args.timeout)

@@ -30,12 +30,15 @@ import main.dynamicComputationGraph as dcg
 from main.simulateAllCertificatePoly import *
 import verifierTM.SATFixedStateTM as TM
 import main.log_ext as log_ext
+log=log_ext.get_logger(__name__)
 
 def setup_argument():
     parser = argparse.ArgumentParser()
     parser.add_argument('filename', help="Path to CNF or tape string format file")
+    parser.add_argument('--timeout', type=int, default=None, help="timeout in minutes (default: no timeout)")
     log_ext.setup_logging(parser)
     args= parser.parse_args()
+    if args.timeout is not None: args.timeout*=60
     return args
 
 def read_file(filename):
@@ -59,7 +62,7 @@ def parse_input(filename):
         tape = content.replace("0\n%\n0","").replace("0\n","&").strip()+'#'
         tape = tape.replace(" ","_").replace("_&","&")
     else:
-        log.info("Recarded as fixed-format tape")
+        log.info("Regarded as fixed-format tape")
         tape = content.strip()
         if '#' not in tape:
             raise ValueError("Invalid tape format: missing '#' terminator")
@@ -71,13 +74,13 @@ def parse_input(filename):
 def main():
     args = setup_argument()
     filename = args.filename
-
+    timeout=args.timeout
     tape_string = parse_input(filename)
     temp = tape_string.rstrip('#').replace('-','').replace('&','_').split('_')
     m = max(map(int,filter(lambda x: x.isdecimal(), temp)))
     log.info(f"Processing {filename} with m={m}")
     result = SimulateVerifierForAllCertificates(tape_string, m, TM.INIT_STATE, TM.inputSymbols, TM.delta, TM.states, 
-            TM.symbols, TM.ACCEPT_STATE, TM.REJECT_STATE, TM.certSymbols)
+            TM.symbols, TM.ACCEPT_STATE, TM.REJECT_STATE, TM.certSymbols, timeout=timeout)
     print(result, "\n")
 
     if result=='Yes':
