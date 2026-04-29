@@ -51,14 +51,14 @@ def collectEdgesWithPath(G,C0,Ef):
     return C
 
 def ComputeCoverEdges(G,Ef):
-
     C = dcg.CellArray(dcg.CellArray.TYPE_SET)
     for f in Ef:
         C[dcg.index(f)].add(f)
     Q = collections.deque(Ef)
+    Vv=set()
     while len(Q)>0:
         f=Q.popleft()
-        Ec=dcg.GetWeakCeilingAdjacentEdges(G,f, Ef)
+        Ec=dcg.GetWeakCeilingAdjacentEdges(G,f, Ef, Vv)
         for e in Ec:
             u,v=e; i=dcg.index(e)
             if e in C[i]: continue
@@ -79,13 +79,16 @@ def GetStepPendentEdgesWithReachableGraph(G, C, V0, Ef):
         i=dcg.index(f)
         if H.hasEdge(f): continue
         H.addEdge(f)
-        #if f in Ev: continue
-        #Ev.add(f)
         u,v=f;
         if f not in C[i] and G.CountISuccedents(f)==0:
             Er.add(f)
+        else:
+            T.extend(G.GetISuccedents(f))==0
+            
         if v.tier()>0 and G.CountIPrecedents(f)==0:
             Er.add(f)
+        else:
+            T.extend(G.GetIPrecedents(f))==0
             
         if f not in Ef:
             En=G.getNextEdges(f); 

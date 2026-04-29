@@ -28,18 +28,19 @@ if logging.getLevelName(VERBOSE) == f"Level {VERBOSE}":
     logging.addLevelName(VERBOSE, "VERBOSE")
     
     
-def setup_logging():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--loglevel',
-        default='INFO',
-        choices=['VERBOSE', 'DEBUG','INFO','WARNING','ERROR','CRITICAL'])
-    args = parser.parse_args()
-    level=args.loglevel
+def setup_logging(argParser=None):
+    parser = argparse.ArgumentParser() if argParser is None else argParser
+    default_level='DEBUG' if __debug__ else 'INFO'
     
-    if level=="":
-        numeric_level=logging.DEBUG if __debug__ else logging.INFO
-    else :
-        numeric_level = logging.getLevelNamesMapping().get(level.upper(), logging.INFO)
+    parser.add_argument('--loglevel',
+        default=default_level,
+        choices=['VERBOSE', 'DEBUG','INFO','WARNING','ERROR','CRITICAL'])
+    
+    if argParser is None: args=parser.parse_args()
+    else: args, unknown = parser.parse_known_args()
+    
+    level=args.loglevel
+    numeric_level = logging.getLevelNamesMapping().get(level.upper(), logging.INFO)
     logging.basicConfig(level=numeric_level)
 
 def get_inputlog_str(language):

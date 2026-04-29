@@ -118,7 +118,8 @@ _TRANSITIONS = {
         ("Assign.B", "0"):("Backward.B", "B",-1), 
     }
 
-symbols=list("_-&#TF0123456789"+"ϵ")
+inputSymbols="_-&#TF0123456789"
+symbols=inputSymbols+"ϵ"
 certSymbols="TF"
 states=["Check.Free","CheckNot.Free","Unknown.Free", "UnknownNot.Free", "UnknownTerm.Free", "Skip.Free",
         "Check.Forwarded", "CheckNot.Forwarded", "Unknown.Forwarded", "UnknownNot.Forwarded","UnknownTerm.Forwarded", "Skip.Forwarded" ,

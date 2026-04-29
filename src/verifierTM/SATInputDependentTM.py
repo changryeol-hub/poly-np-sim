@@ -93,7 +93,8 @@ _TRANSITIONS = {
         
     }
 
-symbols="_-&#TF?!0123456789"+"ϵ"
+inputSymbols="_-&#TF0123456789"
+symbols=inputSymbols+"?!ϵ"
 certSymbols="TF"
 _STATES0=["Check","Not", "Skip", "Backward.T","Backward.F","Not",
         "Reject","Accept"]

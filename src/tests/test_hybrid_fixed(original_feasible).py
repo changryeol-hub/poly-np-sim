@@ -101,10 +101,11 @@ def run_verifier_tests():
             tape,
             0,  # fixed certificate mode
             TM.INIT_STATE,
-            TM.symbols,
+            TM.inputSymbols,
             TM.delta,
             TM.states,
-            TM.symbols
+            TM.symbols,
+            TM.ACCEPT_STATE, TM.REJECT_STATE
         )
 
         if (result == 'Yes') != expected_bool:
@@ -127,18 +128,15 @@ def run_sat_tests():
     for i, (tape, expected_bool) in enumerate(sat_tests):
         m = sat_test_cases.get_variable_count(tape)
         
-        dcg.TierArray.symbols = TM.symbols
-        dcg.TierArray.states = TM.states
-        dcg.TransitionCase.delta = TM.delta
-
         result = SimulateVerifierForAllCertificates(
             tape,
             m,  # enumerate certificates
             TM.INIT_STATE,
-            TM.symbols,
+            TM.inputSymbols,
             TM.delta,
             TM.states,
-            TM.symbols
+            TM.symbols,
+            TM.ACCEPT_STATE, TM.REJECT_STATE
         )
 
         if (result == 'Yes') != expected_bool:

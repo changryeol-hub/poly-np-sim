@@ -283,14 +283,17 @@ class DynamicComputationGraph:
         self.V= CellArray(2)
         self.E= CellArray(1)
         self.__edgeCount=0
-        #Variables for statistics        
-        self.cntCandiateForVerificaition=0
+        #Variables for hybrid statistics        
+        self.cntCandidateForVerification=0
         self.cntExtendedByVerification=0
-        self.cntRemovedDisjointEdge=0
+        self.cntRemovedRedundantFutileEdge=0
         self.cntPrunedWalk=0
         self.cntSumOfComputationWalkLength=0
         self.cntExtendedComputationWalk=0
         self.cntHaltingEdge=0
+        self.cntRetry=0
+        self.cntGeneralCandidateForVerification=0
+        self.cntExtendedByGeneralVerification=0
 
     def __getitem__(self, index):
         return self.E[index].right_incoming + self.E[index].right_outgoing        
@@ -365,9 +368,9 @@ class DynamicComputationGraph:
         return False
     def hasEdge(self,e):
         (u,v)=e
-        index=min(u.index(),v.index())
-        if(v in self.E[index][u].right_outgoing): return True 
-        if(u in self.E[index][v].right_incoming): return True
+        idx=index(e)
+        if(v in self.E[idx][u].right_outgoing): return True 
+        if(u in self.E[idx][v].right_incoming): return True
         return False
     def hasIncomingEdge(self, v):
         if(len(self.E[v.index()][v].right_incoming)>0): return True
@@ -379,21 +382,20 @@ class DynamicComputationGraph:
 
     def addEdge(self, e):
         (u,v)=e
-        self.addVertex(u); self.addVertex(v);
-        index=min(u.index(),v.index())
-        assert index==self.E[index].index, f"{index}!={self.E[index].index},{u},{v}"
+        idx=index(e)
+        assert idx==self.E[idx].index, f"{idx}!={self.E[idx].index},{u},{v}"
+        assert abs(u.index()-v.index()), f"index difference is not +1/-1,{u},{v}"
 
         if self.hasEdge(e): return
+        self.addVertex(u); self.addVertex(v);
         if(u.index()<v.index()):
             self.E[u.index()][u].right_outgoing.append(v)
             self.E[u.index()][v].left_incoming.append(u)
-
         else:
             self.E[v.index()][u].left_outgoing.append(v)
             self.E[v.index()][v].right_incoming.append(u)
 
-        self.E[index].edgeCount+=1
-
+        self.E[idx].edgeCount+=1
         self.__edgeCount+=1
 
     def isSplittingEdge(self,e):

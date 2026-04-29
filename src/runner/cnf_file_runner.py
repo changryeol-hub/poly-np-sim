@@ -20,7 +20,6 @@ Input formats:
    - Example: "-1_3_5&5_2_1&7_9_10&-6_1_-4&2_-6_1#"
 """
 
-import logging as log
 import os, sys, argparse
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -30,16 +29,13 @@ if parent_dir not in sys.path: sys.path.append(parent_dir)
 import main.dynamicComputationGraph as dcg
 from main.simulateAllCertificatePoly import *
 import verifierTM.SATFixedStateTM as TM
-import sys, argparse, os, logging as log
+import main.log_ext as log_ext
 
-def setup_logging():
+def setup_argument():
     parser = argparse.ArgumentParser()
     parser.add_argument('filename', help="Path to CNF or tape string format file")
-    parser.add_argument('--loglevel', default='INFO', choices=['DEBUG','INFO','WARNING','ERROR','CRITICAL'])
-    args = parser.parse_args()
-    
-    numeric_level = log.getLevelNamesMapping().get(args.loglevel.upper(), log.INFO)
-    log.basicConfig(level=numeric_level)
+    log_ext.setup_logging(parser)
+    args= parser.parse_args()
     return args
 
 def read_file(filename):
@@ -73,15 +69,16 @@ def parse_input(filename):
 
 
 def main():
-    args = setup_logging()
+    args = setup_argument()
     filename = args.filename
 
     tape_string = parse_input(filename)
     temp = tape_string.rstrip('#').replace('-','').replace('&','_').split('_')
     m = max(map(int,filter(lambda x: x.isdecimal(), temp)))
     log.info(f"Processing {filename} with m={m}")
-    result = SimulateVerifierForAllCertificates(tape_string, m,TM.INIT_STATE, TM.symbols, TM.delta, TM.states, TM.certSymbols)
-    print(result)
+    result = SimulateVerifierForAllCertificates(tape_string, m, TM.INIT_STATE, TM.inputSymbols, TM.delta, TM.states, 
+            TM.symbols, TM.ACCEPT_STATE, TM.REJECT_STATE, TM.certSymbols)
+    print(result, "\n")
 
     if result=='Yes':
         sys.exit(0)

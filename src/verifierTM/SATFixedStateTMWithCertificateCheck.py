@@ -74,7 +74,8 @@ INIT_STATE   = "InputCheck"
 ACCEPT_STATE = "Accept"
 REJECT_STATE = "Reject"
 
-symbols=list("_-&#TF0123456789"+"ϵ")
+inputSymbols="_-&#TF0123456789"
+symbols=inputSymbols+"ϵ"
 
 _INPUTCHECK_STATES = [
     "InputCheck",

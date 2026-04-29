@@ -58,10 +58,10 @@ def prepare_temp_package():
     # --- copy from original ---
     copy(ROOT/"original"/"verificationWalk.py",        TEMP/"verificationWalk.py")
     copy(ROOT/"original"/"simulateAllCertificatePoly.py", TEMP/"simulateAllCertificatePoly.py")
-    copy(ROOT/"original"/"dynamicComputationGraph.py", TEMP/"dynamicComputationGraph.py")
     
     # --- copy from main ---
     copy(ROOT/"main"/"feasibleGraph.py",           TEMP/"feasibleGraph.py")
+    copy(ROOT/"main"/"dynamicComputationGraph.py", TEMP/"dynamicComputationGraph.py")
     copy(ROOT/"main"/"log_ext.py",                 TEMP/"log_ext.py")
     #copy(ROOT/"original"/"__init__.py",                TEMP/"__init__.py")
     (TEMP / "__init__.py").write_text("# temp package\n")
@@ -103,9 +103,11 @@ def run_verifier_tests():
             tape,
             0,  # fixed certificate mode
             TM.INIT_STATE,
-            TM.symbols,
+            TM.inputSymbols,
             TM.delta,
-            TM.states(n)
+            TM.states(n),
+            TM.symbols,
+            TM.ACCEPT_STATE, TM.REJECT_STATE
         )
 
         if (result == 'Yes') != expected_bool:
@@ -132,9 +134,11 @@ def run_sat_tests():
             tape,
             m,  # enumerate certificates
             TM.INIT_STATE,
-            TM.symbols,
+            TM.inputSymbols,
             TM.delta,
-            TM.states(m)
+            TM.states(m),
+            TM.symbols,
+            TM.ACCEPT_STATE, TM.REJECT_STATE
         )
 
         if (result == 'Yes') != expected_bool:

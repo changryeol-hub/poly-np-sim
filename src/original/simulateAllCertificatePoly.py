@@ -50,15 +50,17 @@ from .log_ext import *
 log=get_logger(__name__)
 
 class NPDynamicComputationGraph(dcg.DynamicComputationGraph):
-    def __init__(self,L,m, q0 , Q,Σ,δ,F):
+    def __init__(self, L, m, q0, Q, Σ, δ, Γ, qacc, qrej):
         super().__init__()
         self.q0=q0
         self.L=L
         self.m=m
         self.Q=Q
         self.δ=δ
-        self.Γ=set(Σ) | {'ϵ'}
-        self.F=F        
+        self.Σ=Σ
+        self.Γ=set(Σ) | {'ϵ'} if Γ is None else Γ
+        self.qacc=qacc
+        self.qrej=qrej
         dcg.initialize(self.Q, self.Γ, self.δ)
 
     def getAllVerticesIn(self, T):
@@ -103,7 +105,7 @@ class NPDynamicComputationGraph(dcg.DynamicComputationGraph):
             s_=L[i_]; v_ = V[i_][0][q_][s_].vertex(None)
             E.add((v,v_))
         else:
-            for s_ in self.Γ:
+            for s_ in self.Σ:
                 v_ = v_=V[i_][0][q_][s_].vertex(None)
                 E.add((v, v_))
         return E
@@ -151,10 +153,10 @@ def IsAcceptedOnFootmarks(G,H, V0):     # ▷ qacc, qrej is a constance
         log.debug(f"Collected boundary edges:{len(Q)}")
     return False
 
-def SimulateVerifierForAllCertificates(L, m, q0,Σ, δ,Q):
-    F={'Accept','Reject'}
-    G=NPDynamicComputationGraph(L, m, q0,Q,Σ, δ,F)
-    #G.Initialize(L, m, q0,Σ | {ϵ}, δ,Q)
+def SimulateVerifierForAllCertificates(L, m, q0, Σ, δ, Q, Γ=None, qacc='Accept', qrej='Reject'):
+
+    G=NPDynamicComputationGraph(L, m, q0, Q, Σ, δ, Γ, qacc, qrej)
+    
     s = L[0]                #▷ Problem Instance is not empty string
     v0 =G.V[0][0][q0][s].vertex(None)   #▷ v0: vertex at index 0, tier 0, state q0, symbol s
     E0 =G.GetFloorNextEdges(v0)  #▷ NextG(v0)

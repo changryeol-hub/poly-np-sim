@@ -51,7 +51,8 @@ def run(tape_string):
         log.warn("Empty or Wrong Input!")
         return None
     m=max(map(int,tape_string.rstrip("#").strip("_").replace('&','_').replace('__','_').split("_")))
-    result=SimulateVerifierForAllCertificates(tape_string, m,TM.INIT_STATE, TM.symbols, TM.delta, TM.states, TM.certSymbols)
+    result = SimulateVerifierForAllCertificates(tape_string, m, TM.INIT_STATE, TM.inputSymbols, TM.delta, TM.states, 
+            TM.symbols, TM.ACCEPT_STATE, TM.REJECT_STATE, TM.certSymbols)
     return result
 
 def test_machine():
@@ -80,7 +81,7 @@ def main_interactive():
         if "#" not in tape:
             print("Empty or Wrong Input!")
             return
-        print(run(tape))
+        print(run(tape), "\n")
 
 if __name__ == "__main__":
     log_ext.setup_logging()

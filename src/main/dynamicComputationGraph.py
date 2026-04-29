@@ -275,13 +275,16 @@ class DynamicComputationGraph:
         self.E= CellArray(1)
         self.__edgeCount=0
         #Variables for statistics        
-        self.cntCandiateForVerificaition=0
+        self.cntCandidateForVerification=0
         self.cntExtendedByVerification=0
-        self.cntRemovedDisjointEdge=0
+        self.cntRemovedRedundantFutileEdge=0
         self.cntPrunedWalk=0
         self.cntSumOfComputationWalkLength=0
         self.cntExtendedComputationWalk=0
         self.cntHaltingEdge=0
+        self.cntRetry=0
+        self.cntGeneralCandidateForVerification=0
+        self.cntExtendedByGeneralVerification=0
         
     def __getitem__(self, index):
         return self.E[index].right_incoming + self.E[index].right_outgoing
@@ -382,9 +385,9 @@ class DynamicComputationGraph:
         return False
     def hasEdge(self,e):
         (u,v)=e
-        index=min(u.index(),v.index())
-        if(v in self.E[index][u].right_outgoing): return True 
-        if(u in self.E[index][v].right_incoming): return True
+        idx=index(e)
+        if(v in self.E[idx][u].right_outgoing): return True 
+        if(u in self.E[idx][v].right_incoming): return True
         return False
     def hasIncomingEdge(self, v):
         if(len(self.E[v.index()][v].right_incoming)>0): return True
@@ -396,9 +399,8 @@ class DynamicComputationGraph:
 
     def addEdge(self, e):
         (u,v)=e
-
-        index=min(u.index(),v.index())
-        assert index==self.E[index].index, f"{index}!={self.E[index].index},{u},{v}"
+        idx=index(e)
+        assert idx==self.E[idx].index, f"{idx}!={self.E[idx].index},{u},{v}"
         assert abs(u.index()-v.index()), f"index difference is not +1/-1,{u},{v}"
 
         if self.hasEdge(e): return
@@ -406,13 +408,11 @@ class DynamicComputationGraph:
         if(u.index()<v.index()):
             self.E[u.index()][u].right_outgoing.append(v)
             self.E[u.index()][v].left_incoming.append(u)
-
         else:
             self.E[v.index()][u].left_outgoing.append(v)
             self.E[v.index()][v].right_incoming.append(u)
 
-        self.E[index].edgeCount+=1
-
+        self.E[idx].edgeCount+=1
         self.__edgeCount+=1
 
 
@@ -517,7 +517,7 @@ class DynamicComputationGraph:
         return set(S)
         
     def CountIPrecedents(self, e):
-        Es=self.E[min(e[0].index(),e[1].index())]
+        Es=self.E[index(e)]
         cnt=0
         for p in self.IPrecedent(e[1]):       # vertex on Precedent of u
             cnt+=len(Es[p].right_outgoing)+len(Es[p].left_outgoing)
@@ -525,8 +525,7 @@ class DynamicComputationGraph:
                    
     def GetIPrecedents(self, e):       # return PrecG(e)
         P = []
-        #print("GetIPrecedents",e)
-        (u, v) = e; i=min(u.index(),v.index())
+        (u, v) = e; i=index(e)
         if v.tier()==0: return set()  #floor edge
         for v_ in self.IPrecedent(v):       # vertex on Precedent of u
             for (v_,u_) in self.outgoingEdgeOf(v_):
@@ -535,7 +534,7 @@ class DynamicComputationGraph:
         return set(P)
         
     def CountISuccedents(self, e):
-        Es=self.E[min(e[0].index(),e[1].index())]
+        Es=self.E[index(e)]
         cnt=0
         for s in self.ISuccedent(e[0]):       # vertex on Precedent of u
             cnt+=len(Es[s].left_incoming)+len(Es[s].right_incoming)
@@ -543,7 +542,7 @@ class DynamicComputationGraph:
 
     def GetISuccedents(self, e):        #▷ Returns SuccG(e)
         S =[]
-        (u, v) = e; i=min(u.index(),v.index())
+        (u, v) = e; i=index(e)
         for u_ in self.ISuccedent(u):       # vertex on Precedent of u
             for (v_, w) in self.incomingEdgeOf(u_):
                 if(v_ in self.ISuccedent(v)) or v==v_ or v_.tier()>v.tier()+1:
@@ -582,10 +581,12 @@ def IsIndexAdjacent(G,f,Ei,Ef,V0):
         return True
     return False
 
-def GetWeakCeilingAdjacentEdges(G, e0, Ef):
+
+def GetWeakCeilingAdjacentEdges(G, e0, Ef, Vv=None): # ▷ Visited vertices set
     C =set()                 # ▷ Collected weakly-ceiling adjacent edges
     (u0,v0)=e0
-    Vv = set()               # ▷ Visited vertices set
+    
+    if Vv==None: Vv=set()    # code for hybrid test
     Q = collections.deque({u0})
    
     if e0 in Ef:
@@ -608,12 +609,11 @@ def GetForwardWeakCeilingAdjacentEdges(G, e0):
     (u0,v0)=e0
 
     assert v0.next_index()!=u0.index, "No forward Ceiling edge for Folding imcoming folding Edge"
-    #print("Ceiling Adjacent edge of:",e0)
+
     Ev =set()               #▷ Visited vertex set
     Q = collections.deque()
-    #print("ForwardCeiling:",i, e0)
-    if v0.state() in ['Accept','Reject']:
-        return C
+
+
     Q.append(v0)
     while len(Q)>0:
 

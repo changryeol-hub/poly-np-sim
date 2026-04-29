@@ -162,7 +162,9 @@ ACCEPT_STATE = "Accept"
 REJECT_STATE = "Reject"
 
 certSymbols=";_0123456789"
-symbols=list("#$;|_~@0123456789⓪①②③④⑤⑥⑦⑧⑨"+"ϵ")
+inputSymbols=list("#;_@0123456789")
+symbols=inputSymbols+list("⓪①②③④⑤⑥⑦⑧⑨|$~ϵ")
+
 states=["Forward","FindDigitToMatch", "SbtractionDigit","DigitToMatch","CheckMatchBackward","MatchedDigits","BackwardAfterMatching",
         "Forward","CheckForward","BackwardToCheckMatch", "CheckSum","BackwardToCheckSum","Borrow.0", "Borrow.1",
         "Reject","Accept"]
@@ -225,8 +227,10 @@ def _tryTransition(TRANSITIONS, state, altstate, addr, symbol, s):
     
     return (next_state,output,move)
 
+_DELTA=dict()
 
 def delta(state,symbol):
+    if (state,symbol) in _DELTA: return _DELTA[(state,symbol)]
     action=state; addr=""; altsymbol=""; altstate=""
     if '.' in state:
         (action,addr)=state.split('.')
@@ -240,8 +244,10 @@ def delta(state,symbol):
     for s in symbols:
         result=_tryTransition(_TRANSITIONS, state, altstate, addr, symbol, s)
         if result is not None:
+            _DELTA[(state,symbol)]=result
             return result
-        
+    
+    _DELTA[(state,symbol)]=("Reject","_",-1)
     return ("Reject","_",-1)
     
 

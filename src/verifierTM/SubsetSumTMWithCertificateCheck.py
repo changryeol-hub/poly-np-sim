@@ -108,7 +108,9 @@ _INPUTCHECK_STATES = [
 ]
 
 certSymbols=";_0123456789"
-symbols=list("#$;|_~@0123456789⓪①②③④⑤⑥⑦⑧⑨"+"ϵ")
+inputSymbols=list("#;_@0123456789")
+symbols=inputSymbols+list("⓪①②③④⑤⑥⑦⑧⑨|$~ϵ")
+
 states=["Forward","FindDigitToMatch", "SbtractionDigit","DigitToMatch","CheckMatchBackward","MatchedDigits","BackwardAfterMatching",
         "Forward","CheckForward","BackwardToCheckMatch", "CheckSum","BackwardToCheckSum","Borrow.0", "Borrow.1",
         "Reject","Accept"]+_INPUTCHECK_STATES 
@@ -127,6 +129,7 @@ for key in _TRANSITIONS:
     if state not in states: assert False, state
 
 def delta(state,symbol):
+    _DELTA=dict()
     action=state; addr=""; altsymbol=""; altstate=""
     if '.' in state:
         (action,addr)=state.split('.')
@@ -140,8 +143,10 @@ def delta(state,symbol):
     for s in symbols:
         result=baseTM._tryTransition(_TRANSITIONS, state, altstate, addr, symbol, s)
         if result is not None:
+            _DELTA[(state,symbol)]=result
             return result
-        
+            
+    _DELTA[(state,symbol)]=("Reject","_",-1)
     return ("Reject","_",-1)
     
 

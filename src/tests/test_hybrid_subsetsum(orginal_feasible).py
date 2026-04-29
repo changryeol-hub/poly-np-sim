@@ -102,10 +102,11 @@ def run_verifier_tests():
             tape,
             0,
             TM.INIT_STATE,
-            TM.symbols,
+            TM.inputSymbols,
             TM.delta,
             TM.states,
-            TM.symbols
+            TM.symbols,
+            TM.ACCEPT_STATE, TM.REJECT_STATE
         )
 
         if (result == 'Yes') != expected_bool:
@@ -133,10 +134,11 @@ def run_sat_tests():
             tape,
             m,
             TM.INIT_STATE,
-            TM.symbols,
+            TM.inputSymbols,
             TM.delta,
             TM.states,
-            TM.symbols
+            TM.symbols,
+            TM.ACCEPT_STATE, TM.REJECT_STATE
         )
 
         if (result == 'Yes') != expected_bool:

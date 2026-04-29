@@ -1,4 +1,4 @@
-c 변수 10개, 절 25개 (Ratio 2.5)
+c veraible:10, clause:25 (Ratio 2.5)
 p cnf 10 25
 1 -2 3 0
 -1 2 4 0

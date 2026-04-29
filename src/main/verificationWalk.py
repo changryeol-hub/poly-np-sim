@@ -4,21 +4,21 @@ verificationWalk.py
 Purpose:
 - Provides routines for verifying the existence of a computation walk within a dynamic computation graph (DCG),
   as part of deterministic NP-verifier simulations.
-- Handles obsolete, disjoint, and redundant edges to determine whether a valid computation path exists
-  from a set of initial vertices (V0) to a given end edge (ef).
+- Handles computing-targeted/redundant/futile edges to determine whether a valid computation path exists
+  from a set of initial vertices (V0) to a given target edge (et).
 
 Main Functions:
-- AddFinalEdgesOfObsoleteWalks(G_U, G, V0): Ensures that obsolete walks are represented in the graph by adding
+- ExtendFutileWalks(G_U, G, V0): Ensures that computing-futile walks are represented in the graph by adding
   their final edges prior to pruning.
 - FindFirstMergingEdgeOrFinalEdge(G, W): Finds the first merging edge in a walk or returns the final edge.
-- PruneWalk(G_U, G, V0, Ef, W, preserveObsolete): Prunes a given walk by removing non-essential edges and
+- PruneWalk(G_U, G, V0, et, W, preserveFutile): Prunes a given walk by removing non-essential edges and
   recomputing the feasible graph.
 - TakeArbitraryWalk(G, V0): Extracts an arbitrary walk from the graph starting from initial vertices V0.
 - FindDisjointEdge(R, W): Finds an edge in a walk W that is disjoint from the reference graph R.
-- FindFeasibleOrDisjointEdge(G_U, G, V0, ef): Iteratively finds either a feasible edge, a disjoint edge,
-  or redundant edge for verification purposes.
-- VerifyExistenceOfWalk(G0, V0, ef): Main routine that verifies whether a feasible computation walk exists
-  from the initial vertices V0 to the specified end edge ef.
+- FindTargetRedundantFutileEdge(G_U, G, V0, et): Iteratively finds either a computing-targeted edge, 
+  a computing-redundant edge, or computing-futile edge for verification purposes.
+- VerifyExistenceOfWalk(G_U, V0, et): Main routine that verifies whether a feasible computation walk exists
+  from the initial vertices V0 to the specified target edge et.
 
 Usage:
 - Intended to work together with dynamicComputationGraph.py and feasibleGraph.py.
@@ -45,12 +45,11 @@ from .log_ext import *
 log=get_logger(__name__)
 
 
-def AddFinalEdgesOfObsoleteWalks(G_U,G, V0):#it should be caculated at first time before pruned
-    ES =set()
+def ExtendFutileWalks(G_U,G, V0):  #It should be caculated at first time before pruned
+    T=collections.deque()
+    for v0 in V0: T.extend(G.outgoingEdgeOf(v0))
     Eo=set()
-    for v0 in V0: ES=ES | set(G_U.outgoingEdgeOf(v0))
-    T=collections.deque(ES)
-    Ev =set()
+    Ev=set()
     while len(T)>0:
         e=T.pop()
         if e in Ev: continue
@@ -74,22 +73,22 @@ def FindFirstMergingEdgeOrFinalEdge(G,W):
     log.log(VERBOSE, f"No merging edge, Final Edge Returned. {e}")
     return e    # ▷ It returns final edge of computation walk if no mergin edge found
 
-def PruneWalk(G_U,G,V0,Ef,W, preserveObsolete):
+def PruneWalk(G_U,G,V0,et,W, preserveFutile):
+    Eo=set(); Ef={et}
     e_ = FindFirstMergingEdgeOrFinalEdge(G,W)
-    Eo=set()
-    if preserveObsolete:
-        Eo=AddFinalEdgesOfObsoleteWalks(G_U, G, V0)     # ▷ Add the end of obsolete edge to final edges
-        log.debug(f"\t\tObsolete Edges Extended |Eo|={len(Eo)}")
+    if preserveFutile:
+        Eo=ExtendFutileWalks(G_U, G, V0)     # ▷ Add the extended futile edges to the designated final edges
+        log.debug(f"\t\tFutile Edges Extended |Eo|={len(Eo)}")
     G_U.cntPrunedWalk+=1
-    log.log(VERBOSE,f"\t\tBefore Walk prunded edge by {e_}. PreserveObsoleteWalk:{preserveObsolete} |E(G)|={G.size()}")
+    log.log(VERBOSE,f"\t\tBefore Walk prunded edge by {e_}. PreserveFutileWalk:{preserveFutile} |E(G)|={G.size()}")
     G.removeEdge(e_)
     G_ = fg.ComputeFeasibleGraph(G,V0, Eo|Ef)           # ▷ Remove e′ from feasible graph
     G.addEdge(e_)            # this is required to restrore original graph 
-    if preserveObsolete: log.debug(f"\t\tWalk has been pruned by edge {e_}. |E(G')| with extended edges={G_.size()}")
+    if preserveFutile: log.debug(f"\t\tWalk has been pruned by edge {e_}. |E(G')| with extended edges={G_.size()}")
     if G_.size()>0 and any(map(lambda f_: G.hasEdge(f_), Ef)):
         for e in Eo:
             if G_.hasEdge(e): G_.removeEdge(e)          # G[E(G)-Eo]
-    log.debug(f"\t\tWalk has been pruned by edge {e_}. PreserveObsoleteWalk:{preserveObsolete} Size Decreased(|E(G)| -> |E(G')|={G_.size()}")
+    log.debug(f"\t\tWalk has been pruned by edge {e_}. PreserveFutileWalk:{preserveFutile} Size Decreased(|E(G)| -> |E(G')|={G_.size()}")
     return G_
 
 def TakeArbitraryWalk(G, V0):       # ▷Take Arbitrary Walk from Start Nodes ▷ Any consistent choice (e.g., always first edge) works; result is deterministic
@@ -109,61 +108,60 @@ def TakeArbitraryWalk(G, V0):       # ▷Take Arbitrary Walk from Start Nodes �
         e=EN[0] if len(EN)>0 else None
     return W
 
-def FindDisjointEdge(R,W):          # ▷ Check indirect precedents, To make orphaned walks, ceiling edges of another walk need
+def FindDisjointEdge(R,W):   # ▷ Find disjoint edge of W from R       
     i=0
     while i<len(W):     # For all edge of walk
         e=W[i]
         if not R.hasEdge(e):
             return e
         i+=1;
-    return None         # All the walk is obsolete walk.
+    return None         # All the walk is Futile walk.
 
-def FindFeasibleOrDisjointEdge(G_U, G, V0, ef):     # V0:initial node of walks, ef : the end of feasible walk
-    G = G.getCopyedGraph()
-    Ef = {ef }                              # ▷ Ef : set of ends of feasible or obsolete walks
+def FindTargetRedundantFutileEdge(G_U, G, V0, et):     # V0:initial node of walks, et : the verification target edge
+    Ef = {et }                              # ▷ Ef : set of verification target edges
     R = dcg.DynamicComputationGraph()
-    log.debug(f"\tStart to Find Feasible/Disjoint/Redundant Edge. Size of G:{G.size()}")   
-    while G.size()>0:                       # Loop until a feasible walk/disjoint edge found
-        W = TakeArbitraryWalk(G, V0)        # ▷ W is either a feasible or an obsolete walk
+    log.debug(f"\tStart to Find Computing-Target/Redundant/Futile Edge. Size of G:{G.size()}")   
+    while G.size()>0:                       # Loop until graph empty or a computing-targeted walk is found
+        W = TakeArbitraryWalk(G, V0)        # ▷ W is either a computing-tareted or a computing-futile walk
         if len(W)==0: return None, None  
-        if ef==W[len(W)-1] or ef in W:     # ▷ e is not obsolete walk but feasible walk
-            return ef, W                    # ▷ W is not always at the end of W
-        elif R.size()>0:                    # ▷ When only one walk left, W is not feasible
+        if et==W[len(W)-1] or et in W:      # ▷ et is not always at the end of W
+            return et, W                    # ▷ et: verifiation target edge, W: computing-targeted edge
+        elif R.size()>0:                    # ▷ After total collapse 
             f=FindDisjointEdge(R,W)
             log.log(VERBOSE, f"findDisjoint Edge:{f}")
-            return f, W                     # ▷ Only embedded walk remains; return disjoint or redundant edge
-        elif G.size()>0:                    # ▷ W can be embedded walk not obsolete walk               
-            H=PruneWalk(G_U, G, V0, Ef, W, False)
-            if H.size()==0:             # Add all edges and vertices of W to R
-                for e in W: R.addEdge(e)
-                G=PruneWalk(G_U, G, V0, Ef, W, True)
+            return f, W                     # ▷ Return disjoint or redundant edge
+        else:                        # ▷ W can be computing-embedded walk                
+            H=PruneWalk(G_U, G, V0, et, W, False)
+            if H.size()==0:                 
+                for e in W: R.addEdge(e)    # Add all edges and vertices of W to R
+                G=PruneWalk(G_U, G, V0, et, W, True)
             else: G=H          
     log.log(VERBOSE, f"Pruned to size 0")
     return None, None
     
     
-def VerifyExistenceOfWalk(G0, V0, ef): # Wrong Original version is right Since obsolete edge should contain rejected path
+def VerifyExistenceOfWalk(G_U, V0, et):      
 
-    log.log(VERBOSE, f"Verifying walk edges ef:{ef}")
+    log.log(VERBOSE, f"Verifying walk edges et:{et}")
     
-    Ef = {ef }
-    G = fg.ComputeFeasibleGraph(G0, V0, Ef)
-    log.log(VERBOSE, f"After Initial feasible graph. ef={ef}")
+    Ef = {et }
+    G = fg.ComputeFeasibleGraph(G_U, V0, Ef)
+    log.log(VERBOSE, f"After Initial feasible graph. et={et}")
    
-    log.debug(f"Start to Verify walk. Orginal Graph G0 -> Feasible Graph G: {G0.size()} -> {G.size()}")
+    log.debug(f"Start to Verify walk. Orginal Graph G_U -> Feasible Graph G: {G_U.size()} -> {G.size()}")
     while G.size()>0:    
-        e, W =FindFeasibleOrDisjointEdge(G0, G, V0, ef)
-        log.log(VERBOSE, f"DisjointEdgeOrFinalEdge: {e}")
+        e, W =FindTargetRedundantFutileEdge(G_U, G, V0, et)
+        log.log(VERBOSE, f"FindTargetRedundantFutileEdge: {e}")
         if e in Ef:
             log.log(VERBOSE,f"Walk Verified ending at {e}")
             return W
         elif e is None:
             log.log(VERBOSE, f"Walk not verified NIL returned")
             return None
-        G0.cntRemovedDisjointEdge+=1
+        G_U.cntRemovedRedundantFutileEdge+=1
         G.removeEdge(e)
         G = fg.ComputeFeasibleGraph(G, V0, Ef)
-        log.debug(f"\tRemoved disjoint edge:{e} Size Decreased(G0->G):{G0.size()}->{G.size()}")
+        log.debug(f"\tRemoved disjoint edge:{e} Size Decreased(G_U->G):{G_U.size()}->{G.size()}")
     log.log(VERBOSE, f"No walk! empty feasible graph!")
     return None
 

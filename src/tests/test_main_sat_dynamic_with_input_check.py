@@ -45,9 +45,11 @@ def run_verifier_tests():
             tape,
             0,  # fixed certificate mode
             TM.INIT_STATE,
-            TM.symbols,
+            TM.inputSymbols,
             TM.delta,
-            TM.states(n)
+            TM.states(n),
+            TM.symbols,
+            TM.ACCEPT_STATE, TM.REJECT_STATE
         )
 
         if (result == 'Yes') != expected_bool:
@@ -74,9 +76,11 @@ def run_sat_tests():
             tape,
             m,  # enumerate certificates
             TM.INIT_STATE,
-            TM.symbols,
+            TM.inputSymbols,
             TM.delta,
-            TM.states(m)
+            TM.states(m),
+            TM.symbols,
+            TM.ACCEPT_STATE, TM.REJECT_STATE
         )
 
         if (result == 'Yes') != expected_bool:

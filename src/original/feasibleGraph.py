@@ -43,8 +43,9 @@ log=get_logger(__name__)
 
 def ComputeCoverEdges(G,Ef):
     C = set()
-    for u,v in Ef: C.add((u,v))
+    for f in Ef: C.add(f)
     Q = collections.deque(Ef)
+
     while len(Q)>0:
         f=Q.popleft()
         Ec=dcg.GetWeakCeilingAdjacentEdges(G,f, Ef)
@@ -64,11 +65,11 @@ def ComputeFeasibleGraph(G, V0,Ef):     #▷ G: non-empty computation graph
         n = H.size()#▷ Number of edges before sweep
         i = H.minEdgeIndex()
         log.log(VERBOSE,f"\t\tBefore Sweep from left to right; minIndex, |E(H)|:{i},{H.size()}")
-        H = SweepEdges(H,C, V0,Ef , i, +1)  #▷ Update the graph by sweeping edges from left to right
+        H = SweepEdges(H,C, V0, Ef, i, +1)  #▷ Update the graph by sweeping edges from left to right
         if H.size()==0: return H
         i = H.maxEdgeIndex()
         log.log(VERBOSE,f"\t\tBefore Sweep from right to left; maxIndex, |E(H)|:{i},{H.size()}")
-        H = SweepEdges(H,C, V0,Ef , i,-1)   #▷ Update the graph by sweeping edges from right to left
+        H = SweepEdges(H,C, V0, Ef, i, -1)   #▷ Update the graph by sweeping edges from right to left
     log.log(VERBOSE,f"Feasible Graph computed:{H.size()}")
     return H   
  
@@ -79,9 +80,9 @@ def SweepEdges(G,C, V0,Ef, i, d):
     log.log(VERBOSE,f"Start SweepEdges: i={i}, |E(G)|={G.size()}, |E(H)|={H.size()}")
     while Ei.size()>0:                   #▷ While there are edges in G with index i
         Ej=H.E[i-d]
-        I = StepUpEdges(G,H,Ei, Ej, V0, Ef)    #▷ Expand edges upward from previous index layer
+        I = StepUpEdges(G, H, Ei, Ej, V0, Ef)    #▷ Expand edges upward from previous index layer
         log.log(VERBOSE,f"Before StepDownEdges i={i}, |E(G)|={G.size()}, |E(H)|={H.size()}")
-        H = StepDownEdges(G, H, I,C)           #▷ Add edges downward to form feasible graph
+        H = StepDownEdges(G, H, I, C)           #▷ Add edges downward to form feasible graph
         log.log(VERBOSE,f"After StepDownEdges i={i}, |E(G)|={G.size()}, |E(H)|={H.size()}")
         i = i + d                           #▷ Move to the next index in direction d
         Ei=G.E[i]
@@ -104,7 +105,7 @@ def StepDownEdges(G, H, I, C):
     log.log(VERBOSE,f"End of StepDownEdges: |I'|={len(I_)}, |E(H)|={H.size()}")
     return H
 
-def StepUpEdges(G, H, Es, Hs, V0, Ef ):     #▷ E ⊂ E(G)
+def StepUpEdges(G, H, Es, Hs, V0, Ef):     #▷ E ⊂ E(G)
     Eb=Es.getFloorEdges()                   #▷ all the edges e = (u, v) ∈ E such that tier(v) = 0)
     Q= collections.deque(Eb)                #▷ Add all floor edge first,
  
