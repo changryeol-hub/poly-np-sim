@@ -199,3 +199,14 @@ print(result)  # 'Yes' or 'No'
 python cnf_file_runner.py input/sample.cnf --loglevel DEBUG
 ```
 **Output:** `'Yes'` (SAT) or `'No'` (UNSAT)
+
+### Interactive Features & Timeout (Experimental Branch)
+For users requiring real-time monitoring or execution constraints, a dedicated **thread-based branch** is provided besides **main branch** for core deterministic polynomial-time logic. 
+- **Purpose:** This branch is separated to maintain core code readability while offering advanced simulation controls.
+- **Key Features:**
+    - **Real-time Status:** Press any key (except Esc) during simulation to view the current total edge count and the size of the candidate queue.
+    - **Manual Abort:** Press the `[Esc]` key to immediately terminate the simulation (returns `'User Aborted'`).
+    - **Timeout Support:** Pass a `timeout` parameter (in seconds) to `SimulateVerifierForAllCertificates` to prevent indefinite execution (returns `'TimeOut'`).
+- **Dependency:** This feature requires the `pynput` library (`python -m pip install pynput`).
+
+*Note: The main branch remains the primary reference for the deterministic polynomial-time logic, while the thread branch is intended for practical experimentation and monitoring.*
