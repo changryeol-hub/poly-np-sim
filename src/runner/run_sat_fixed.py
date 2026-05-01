@@ -52,7 +52,7 @@ def setup_argument():
     if args.timeout is not None: args.timeout*=60
     return args
 
-def run(tape_string, timeout):
+def run(tape_string, timeout=None):
     tape_string=tape_string.strip()
     if (tape_string.find("#")<0): 
         log.warn("Empty or Wrong Input!")
