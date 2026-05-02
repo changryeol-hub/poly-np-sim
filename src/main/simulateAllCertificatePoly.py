@@ -32,7 +32,9 @@ Usage:
 
 Requirements:
     - External Library: `pynput` is required for keyboard interaction.
-      Install via: `python -m pip install pynput`
+      pywinctl or pygetwindow: Required for window focus verification.
+     (Note: pywinctl is recommended for cross-platform PID support; pygetwindow is a lightweight alternative for Windows, especially pypy.)
+      Install via: `python -m pip install pynput pywinctl`
     - Internal Modules: Requires `main.dynamicComputationGraph`, `verificationWalk`, 
       and `feasibleGraph`.
 
@@ -44,8 +46,16 @@ Notes:
 
 import collections
 import copy, time, datetime
-import threading, time
+import threading, os
 from pynput import keyboard
+
+try:
+    from pywinctl import getActiveWindow 
+    isPyWinCtrl=True
+except ImportError:
+    from pygetwindow import getActiveWindow
+    isPyWinCtrl=False
+
 
 from . import dynamicComputationGraph as dcg
 from . import verificationWalk as vw
@@ -210,7 +220,6 @@ def ExtendEdgeDirectlyWithWalk(G, H, W, Ev):
                     if not H.hasEdge(f):
                         log.debug(f"Splitted:{f}")
                         T.append((f, copy.copy(S),copy.copy(R)))
-
         
         H.cntExtendedComputationWalk+=1
         H.cntSumOfComputationWalkLength+=walkLength
@@ -341,18 +350,27 @@ def IsAcceptedOnFootmarksWrapper(G, H, V0, timeout, resultList):
     
     result=IsAcceptedOnFootmarks(G, H, V0)
     resultList.append(result)
-    
+
+
+my_window=None
 
 def simulate(G, H, V0, timeout):
+    global my_window
+    if my_window is None:
+        my_window=getActiveWindow()
     
     G.resume_event=threading.Event()
     def on_key_pressed(key):
         nonlocal G
+        activeWindow=getActiveWindow()
+        if activeWindow!=my_window and (not isPyWinCtrl or os.getpid()!=activeWindow.getPID()):
+            return True
         if key==keyboard.Key.esc:
             G.isAborted=True
             G.resume_event.set()
-            return False
-        else: G.resume_event.set()
+        else: 
+            G.resume_event.set()
+        return True
             
     listener=keyboard.Listener(on_press=on_key_pressed)
     
