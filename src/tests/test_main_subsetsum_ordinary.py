@@ -1,55 +1,71 @@
 """
-test_main_sat_dynamic_with_input_check.py
+test_main_subsetsum.py
 
 Purpose:
-- Regression test for SAT Fixed-State Turing Machine with Input Sanitization
+- Regression test for Ordinary Subset-Sum Turing Machine
 - Separates:
     1) Verifier correctness  : V(x, w)
-    2) SAT existence search : ∃w V(x, w)
+    2) Solution existence    : ∃w V(x, w)
+
+Input format:
+    Target_@_a_b_c_d#certificate_;
+        Example: 28_@_1_3_5_7_10_20#1_20_7_;
+
+    - '_' : separator
+    - '@' : separates target value and set elements
+    - '#' : begins certificate section
+    - ';' : terminates certificate
+    - certificate is a selected subset written as numbers
+
+Modes:
+    Verifier mode
+        Tape contains explicit certificate ending with ';'
+        → runs fixed simulation (m = 0)
+
+    Existence mode
+        Tape ends with '#'
+        → enumerates all certificates (m = number of elements)
 
 Usage:
-    $ python test_main_sat_dynamic_with_input_check.py
+    $ python test_main_subsetsum_fixed.py
 """
+
 
 import logging as log
 import os, sys
 
-# --- path setup ---
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
 if parent_dir not in sys.path:
     sys.path.append(parent_dir)
 
-# --- project imports ---
 import main.dynamicComputationGraph as dcg
 from main.simulateAllCertificatePoly import SimulateVerifierForAllCertificates
-import verifierTM.SATInputDependentTMWithCertificateCheck as TM
+import verifierTM.SubsetSumOrdinaryTM as TM
 import main.log_ext as log_ext
 
-import sat_test_cases 
-
-verifier_tests=sat_test_cases.verifier_tests
-sat_tests=sat_test_cases.sat_tests
+import subsetsum_ordinary_test_cases as tc
 
 # ============================================================
-# Run Verifier Tests
+# Verifier tests
 # ============================================================
 
 def run_verifier_tests():
-    log.info("==== Verifier correctness tests ====")
+    log.info("==== SubsetSum Verifier tests ====")
     ok = True
 
-    for i, (tape, expected_bool) in enumerate(verifier_tests):
-        n=sat_test_cases.get_variable_count(tape)   # Used for state-space size, not certificate length
+    for i, (tape, expected_bool) in enumerate(tc.verifier_tests):
+
         result = SimulateVerifierForAllCertificates(
             tape,
-            0,  # fixed certificate mode
+            0,
             TM.INIT_STATE,
             TM.inputSymbols,
             TM.delta,
-            TM.states(n),
+            TM.states,
             TM.symbols,
-            TM.ACCEPT_STATE, TM.REJECT_STATE
+            TM.ACCEPT_STATE, TM.REJECT_STATE,
+            TM.certSymbols
         )
 
         if (result == 'Yes') != expected_bool:
@@ -62,25 +78,27 @@ def run_verifier_tests():
 
 
 # ============================================================
-# Run SAT Search Tests
+# SAT search tests
 # ============================================================
 
 def run_sat_tests():
-    log.info("==== SAT existence tests ====")
+    log.info("==== SubsetSum existence tests ====")
     ok = True
 
-    for i, (tape, expected_bool) in enumerate(sat_tests):
-        m = sat_test_cases.get_variable_count(tape)
+    for i, (tape, expected_bool) in enumerate(tc.sat_tests):
+
+        m = tc.get_certificate_length(tape)
 
         result = SimulateVerifierForAllCertificates(
             tape,
-            m,  # enumerate certificates
+            m,
             TM.INIT_STATE,
             TM.inputSymbols,
             TM.delta,
-            TM.states(m),
+            TM.states,
             TM.symbols,
-            TM.ACCEPT_STATE, TM.REJECT_STATE
+            TM.ACCEPT_STATE, TM.REJECT_STATE,
+            TM.certSymbols
         )
 
         if (result == 'Yes') != expected_bool:
@@ -92,13 +110,10 @@ def run_sat_tests():
     return ok
 
 
-# ============================================================
-# Main
-# ============================================================
-
 if __name__ == "__main__":
 
-    log_ext.setup_logging()
+    if not log.getLogger().handlers:
+        log_ext.setup_logging()
 
     verifier_ok = run_verifier_tests()
     sat_ok = run_sat_tests()
@@ -109,3 +124,4 @@ if __name__ == "__main__":
     else:
         print("Some tests failed.")
         sys.exit(1)
+

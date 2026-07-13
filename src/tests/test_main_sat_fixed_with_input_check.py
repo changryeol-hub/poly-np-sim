@@ -2,7 +2,7 @@
 test_main_sat_fixed_with_input_check.py
 
 Purpose:
-- Regression test for SAT Fixed-State Turing Machine With InputCheck
+- Regression test for SAT Fixed-State Turing Machine With Input Sanitization
 - Separates:
     1) Verifier correctness  : V(x, w)
     2) SAT existence search : ∃w V(x, w)

@@ -1,7 +1,7 @@
 """
 run_sat_fixed.py
 
-Fixed-state SAT Verifier Turing Machine Runner.
+Certificate-Oblivious Fixed-state SAT Verifier Turing Machine Runner.
 
 This script provides a SAT verifier Turing Machine with a fixed state set.
 Unlike other Turing Machine runners, the state set here is constant and does
@@ -41,7 +41,7 @@ if parent_dir not in sys.path: sys.path.append(parent_dir)
 
 import main.dynamicComputationGraph as dcg
 from main.simulateAllCertificatePoly import *
-import verifierTM.SATFixedStateTM as TM
+import verifierTM.SATFixedStateCOTM as TM
 import main.log_ext as log_ext
 
 

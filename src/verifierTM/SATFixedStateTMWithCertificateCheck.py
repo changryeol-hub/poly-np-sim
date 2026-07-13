@@ -50,7 +50,7 @@ demonstrate that the verification procedure itself does not depend on the
 pre-checking stage.
 """
 
-from . import SATFixedStateTM as baseTM
+from . import SATFixedStateCOTM as baseTM
 _BASE_TRANSITIONS = baseTM._TRANSITIONS
     
 _INPUTCHECK_TRANSITONS={

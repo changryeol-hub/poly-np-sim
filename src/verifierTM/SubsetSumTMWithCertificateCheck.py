@@ -76,8 +76,7 @@ The exported alphabets and state lists exist only for machine construction and
 consistency checking and are not part of the transition semantics.
 """
 
-#from .SubsetSumTM import _TRANSITIONS as _BASE_TRANSITIONS
-from . import SubsetSumTM as baseTM
+from . import SubsetSumCOTM as baseTM
 
 _BASE_TRANSITIONS = baseTM._TRANSITIONS
 
@@ -85,8 +84,9 @@ _INPUTCHECK_TRANSITONS = {
         ("InputCheck", "#"): ("CertificateCheck", "#", +1),
         ("InputCheck", "*"): ("InputCheck", "*", +1),
         ("CertificateCheck", "D"):("CertificateCheck", "D", +1),
+        ("CertificateCheck", "x"):("CertificateCheck", "x", +1),
         ("CertificateCheck", "_"):("CertificateCheck", "_", +1),
-        ("CertificateCheck", ";"):("BackToBeginning", ";", -1),
+        ("CertificateCheck", "ϵ"):("BackToBeginning", "ϵ", -1),
         ("CertificateCheck", "*"):("Reject", "_", -1),
         ("BackToBeginning", "*"):("BackToBeginning", "*", -1),
         ("BackToBeginning", "ϵ"):("Forward", "ϵ", +1),      
@@ -107,21 +107,11 @@ _INPUTCHECK_STATES = [
     "BackToBeginning",
 ]
 
-certSymbols=";_0123456789"
-inputSymbols=list("#;_@0123456789")
-symbols=inputSymbols+list("⓪①②③④⑤⑥⑦⑧⑨|$~ϵ")
+certSymbols=baseTM.certSymbols
+inputSymbols=baseTM.inputSymbols
+symbols=baseTM.symbols
 
-states=["Forward","FindDigitToMatch", "SbtractionDigit","DigitToMatch","CheckMatchBackward","MatchedDigits","BackwardAfterMatching",
-        "Forward","CheckForward","BackwardToCheckMatch", "CheckSum","BackwardToCheckSum","Borrow.0", "Borrow.1",
-        "Reject","Accept"]+_INPUTCHECK_STATES 
-        
-for i in range(0,10): 
-    states.append("Backward"+"."+str(i))
-    states.append("BackwardToMatch"+"."+str(i))
-    states.append("MatchPosition"+"."+str(i))
-    states.append("BackwardToSubtract"+"."+str(i))
-    states.append("SumArea"+"."+str(i))
-    states.append("Subtract"+"."+str(i))
+states=baseTM.states +_INPUTCHECK_STATES 
 
 for key in _TRANSITIONS:
     state, symbol=key

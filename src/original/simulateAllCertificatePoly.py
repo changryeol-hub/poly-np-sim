@@ -18,7 +18,7 @@ Main Classes:
 Main Functions:
 - CollectBoundaryEdges(G, H): Collects edges on the current boundary of feasible graph H
   that may extend the graph in valid ways.
-- ExtendByVerifiableEdges(V0, Q, H, Ev): Attempts to extend H along candidate edges Q,
+- ExtendByVerifiableEdges(v0, Q, H, Ev): Attempts to extend H along candidate edges Q,
   verifying each walk's feasibility via VerifyExistenceOfWalk.
 - IsAcceptedOnFootmarks(G, H, v0): Determines whether there exists a feasible walk
   starting from vertex v0 that reaches an accepting state.
@@ -124,13 +124,13 @@ def CollectBoundaryEdges(G,H):
                     if not H.hasEdge(e): Q.add(e)
     return Q
     
-def ExtendByVerifiableEdges(V0, Q, H, Ev):
+def ExtendByVerifiableEdges(v0, Q, H, Ev):
     i=0
     for e in Q:
         H.addEdge(e)
         log.debug(f"Verifying edge:{e}")
         i+=1 
-        if vw.VerifyExistenceOfWalk(H, V0, e):
+        if vw.VerifyExistenceOfWalk(H, v0, e):
             Ev.add(e)
             log.info(f"Extended:{e}, Candidate edges remained:{len(Q)-i}")
 
@@ -139,12 +139,12 @@ def ExtendByVerifiableEdges(V0, Q, H, Ev):
             log.debug(f"Not Extended:{e} - Candidate edges remained:{len(Q)-i}")
            
 
-def IsAcceptedOnFootmarks(G,H, V0):     # ▷ qacc, qrej is a constance
+def IsAcceptedOnFootmarks(G, H, v0):     # ▷ qacc, qrej is a constance
     Q = CollectBoundaryEdges(G,H)
     log.debug(f"Collected boundary edges:{len(Q)}")
     while len(Q)>0:# ▷ Extend H by valid computation edges
         Ev=set()
-        ExtendByVerifiableEdges(V0, Q, H, Ev) #▷ Ev: verified extension edges
+        ExtendByVerifiableEdges(v0, Q, H, Ev) #▷ Ev: verified extension edges
         if len(Ev)==0:                  #▷ No feasible edge extended
             return False
         elif any(map(lambda e:e[1].state()=='Accept',Ev)):   #there exist state(v) = qacc for some (u, v) ∈ Ev then
@@ -160,10 +160,9 @@ def SimulateVerifierForAllCertificates(L, m, q0, Σ, δ, Q, Γ=None, qacc='Accep
     s = L[0]                #▷ Problem Instance is not empty string
     v0 =G.V[0][0][q0][s].vertex(None)   #▷ v0: vertex at index 0, tier 0, state q0, symbol s
     E0 =G.GetFloorNextEdges(v0)  #▷ NextG(v0)
-    V0={v0}
     H = dcg.DynamicComputationGraph() #▷ Computation Graph
     for e in E0: H.addEdge(e)
-    if IsAcceptedOnFootmarks(G, H, V0): # ▷ v0:Initial vertex where state(v0) = q0
+    if IsAcceptedOnFootmarks(G, H, v0): # ▷ v0:Initial vertex where state(v0) = q0
         return 'Yes'
     return 'No'
 

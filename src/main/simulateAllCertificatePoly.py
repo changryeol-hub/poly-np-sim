@@ -72,16 +72,14 @@ class NPDynamicComputationGraph(dcg.DynamicComputationGraph):
             assert abs(u.index()-z.index())==1, "Index difference assertion"+str(u)+","+str((v,w))+str(Ep)
         return En
         
-
-    def GetNonFloorNextEdge(self,u,Es):
+    def GetNonFloorNextEdges(self,v,h):
         E=set()
-        (i_, q_) = (u.next_index(), u.next_state())
-        for e in Es.getAllEdges():
-            v,w = e
-            if v.index() != u.next_index() or u.tier()<w.tier() or (u.tier()==w.tier() and u!=w): continue
-            if u.tier()==w.tier()+1 and not (w.state()==u.laste_state() and w.symbol()==u.last_symbol()): continue
-            s=self.ISuccessorWith(v, u.next_state())
-            E.add((u,s))
+        (i_, q_) = (v.next_index(), v.next_state())
+        for s_ in self.Γ:
+            for t_ in range(1,h+2):
+                V=self.getAllVerticesIn(self.V[i_][t_][q_][s_])
+                for w in V:
+                    E.add((v,w))
         return E
 
     def GetFloorNextEdges(self,v): #should check no outgoing edge from it
@@ -104,7 +102,6 @@ class NPDynamicComputationGraph(dcg.DynamicComputationGraph):
                 E.add((v, v_))
         return E
 
-
 def GetReverseCeilingAdjacentEdges(H, e):
     u,v=e
     Vv=set()
@@ -121,17 +118,17 @@ def GetReverseCeilingAdjacentEdges(H, e):
             Ef.update(Et)
     return Ef
      
-def AddExtendableEdgeOnCeilingEdges(H, S, Ev):
+def AddExtendableEdgeOnCeilingEdges(H, S, Eb):
     for e in S:
         if e is None: continue
         u,v=e
-        if H.isMergingEdge(e) or H.isPseudoCombiningEdge(e) or H.isCombiningEdge(e): #should consider combined edge
+        if H.isProperMergingEdge(e) or H.isPseudoCombiningEdge(e) or H.isCombiningEdge(e): #should consider combined edge
             Ef=GetReverseCeilingAdjacentEdges(H,e)
-            for ef in Ef: Ev.add((e,ef))
+            for ef in Ef: Eb.add((e,ef))
             
                     
             
-def ExtendEdgeDirectlyWithWalk(G, H, W, Ev):
+def ExtendEdgeDirectlyWithWalk(G, H, W, Eb):
     
     S=dcg.CellArray()
     R=dcg.CellArray()
@@ -159,13 +156,13 @@ def ExtendEdgeDirectlyWithWalk(G, H, W, Ev):
             if not H.hasEdge(e):
                 H.addEdge(e); 
                 isNewEdge=True
-                #log.log(VERBOSE, f"{e}")
+                log.log(VERBOSE, f"{e}")
             u,v=e
             S[min(u.index(),v.index())]=e;
             if v.tier()==0: R[v.index()]=v.symbol()
 
             if isNewEdge and H.isMergingEdge(e) :
-                AddExtendableEdgeOnCeilingEdges(H,S,Ev)
+                AddExtendableEdgeOnCeilingEdges(H,S,Eb)
 
             walkLength+=1
             if v.state() in [G.qacc,G.qrej]:
@@ -175,8 +172,8 @@ def ExtendEdgeDirectlyWithWalk(G, H, W, Ev):
             ep=S[min(v.index(),v.next_index())]
 
             if isNewEdge and ep is not None and v.next_index()!=u.index():
-                if H.isMergingEdge(ep) or H.isPseudoCombiningEdge(ep) or H.isCombiningEdge(ep):
-                    Ev.add((None,e))
+                if H.isProperMergingEdge(ep) or H.isPseudoCombiningEdge(ep) or H.isCombiningEdge(ep):
+                    Eb.add((None,e))
 
             Ep={ep}
             En=G.GetNextEdgesAboveIPreds(v, Ep)
@@ -201,30 +198,28 @@ def ExtendEdgeDirectlyWithWalk(G, H, W, Ev):
 
 
 
-def CollectForISuccedentBoundaryEdges(H, V0):
+def CollectForISuccedentBoundaryEdges(H, v0):
     T=collections.deque()
-    for v0 in V0: T.extend(H.outgoingEdgeOf(v0))
-    Q=set()
-    Ev =set()
+    T.extend(H.outgoingEdgeOf(v0))
+    Eb=set()
+    Ev=set()
     while len(T)>0:
         e=T.pop()
         if e in Ev: continue
         Ev.add(e)
         T.extend(H.getNextEdges(e))
-        if H.isCombiningEdge(e) or H.isPseudoCombiningEdge(e):
+        if H.isCombiningEdge(e) or H.isPseudoCombiningEdge(e) or H.isProperMergingEdge(e):
             Ef=GetReverseCeilingAdjacentEdges(H, e)
-            for f in Ef: Q.add((e,f))
-    return Q 
+            for f in Ef: Eb.add((e,f))
+    log.debug(f"Collected General Boundary Edges:{len(Eb)}")
+    return Eb 
+    
 
-def CollectRestrictedBoundaryEdges(G, H, V0, Ev):
+def CollectRestrictedCandidateEdges(G, H, Eb):
     Q=set()             # the empty set of edges
-
-    log.log(VERBOSE, f"Collecting For:{len(Ev)}")
+    log.log(VERBOSE, f"Collecting For:{len(Eb)}")
     
-    if len(Ev)==0: 
-        Ev=CollectForISuccedentBoundaryEdges(H, V0)
-    
-    for ep,e in Ev:        #▷ For all last extended edges
+    for ep,e in Eb:        #▷ For all last extended edges
         u,v=e; 
         if v.next_index()==u.index() or v.state() in [G.qacc, G.qrej]:
             continue
@@ -235,12 +230,12 @@ def CollectRestrictedBoundaryEdges(G, H, V0, Ev):
         En=G.GetNextEdgesAboveIPreds(v, Ep)
         for f in En:
             if not H.hasEdge(f): Q.add(f);
-
+    log.debug(f"Collected Candidate Edges:{len(Q)}")
     return Q
 
 
 
-def ExtendByVerifiableEdges(G, V0, Q0, H, Ev):
+def ExtendByVerifiableEdges(G, v0, Q0, H, Eb):
     Ef=set()
     
     Q=collections.deque(Q0)
@@ -250,46 +245,47 @@ def ExtendByVerifiableEdges(G, V0, Q0, H, Ev):
         
         H.addEdge(ef)
         H.cntCandidateForVerification+=1
-        W=vw.VerifyExistenceOfWalk(H, V0, ef)
+        W=vw.VerifyExistenceOfWalk(H, v0, ef)
         H.removeEdge(ef)
         if W is not None:
             log.info(f"Extended:{ef}, Candidate edges remained:{len(Q)}")
             H.cntExtendedByVerification+=1
-            R=ExtendEdgeDirectlyWithWalk(G,H,W,Ev)
-            if R is not None:   #there exist state(v) = qacc for some (u, v) ∈ Ev then
+            R=ExtendEdgeDirectlyWithWalk(G, H, W, Eb)
+            if R is not None:   #there exist state(v) = qacc for some (u, v) ∈ E(H) then
                 return R
         else:
             log.debug(f"Not Extended:{ef} - Candidate edges remained:{len(Q)}")
     return None
     
     
-def IsAcceptedOnFootmarks(G,H, V0):     # ▷ qacc, qrej is a constance
-    Ev=set()
+def IsAcceptedOnFootmarks(G, H, v0):     # ▷ qacc, qrej is a constance
     Q=set()
-    for v0 in V0:
-        Q.update(G.GetFloorNextEdges(v0))
+    Q.update(G.GetFloorNextEdges(v0))
     
     isRetry=False
+   
     while len(Q)>0:# ▷ Extend H by valid computation edges
-
-        Ev=set()
+        Eb=set()
+        prevCntEdge=H.size()
         if len(Q)>0:
             prevCntCandiate=H.cntCandidateForVerification; prevCntExtendedByVerification=H.cntExtendedByVerification
-            R=ExtendByVerifiableEdges(G, V0, Q, H, Ev) #▷ Ev: verified extension edges
+            R=ExtendByVerifiableEdges(G, v0, Q, H, Eb) #▷ Eb: for collecting the previous edge of boundary edges
             if isRetry:
                 H.cntRetry+=1;               
                 H.cntGeneralCandidateForVerification+=H.cntCandidateForVerification-prevCntCandiate
                 H.cntExtendedByGeneralVerification+=H.cntExtendedByVerification-prevCntExtendedByVerification
-        if R is not None:   #there exist state(v) = qacc for some (u, v) ∈ Ev then
+        if R is not None:   #there exist state(v) = qacc for some (u, v) ∈ E(H) then
             G.yesWitness="".join(R).strip('ϵ')
             return True
-        elif len(Ev)==0: #▷ No valid edge extended
-            if isRetry: return False
-            else: isRetry=True         #▷ Trigger the General Index-Succedent-based Verification
-        else: isRetry=False
+        elif H.size()==prevCntEdge and isRetry: #▷ No valid edge extended for general ISuccent candidate edge
+            return False
         
-        Q=CollectRestrictedBoundaryEdges(G,H, V0, Ev)    #▷ Eb: newly collected boundary edges
-        log.debug(f"Collected Boundary Edges:{len(Q)}")
+        Q=CollectRestrictedCandidateEdges(G, H, Eb)    #▷ Eb: newly collected previous edge of boundary edges
+        if len(Q)==0:  # Retry with general succedent boundary edges
+            Eb=CollectForISuccedentBoundaryEdges(H, v0)
+            Q=CollectRestrictedCandidateEdges(G, H, Eb)
+            isRetry=True
+        else: isRetry=False
 
     return False
 
@@ -323,9 +319,9 @@ def SimulateVerifierForAllCertificates(L, m, q0, Σ, δ, Q, Γ=None, qacc='Accep
     print("Tape input length:", len(L))
     print("Certificate length:",m)
     print(f"State count: {len(G.Q)}, symbol count: {len(G.Γ)}")
-    start = time.time()
-    result=IsAcceptedOnFootmarks(G,H, {v0}) # ▷ v0:Initial vertex where state(v0) = q0
-    end = time.time()
+    start = time.monotonic()
+    result=IsAcceptedOnFootmarks(G,H, v0) # ▷ v0:Initial vertex where state(v0) = q0
+    end = time.monotonic()
     if result and m > 0:
         print("Witness for accepted certificate:", G.yesWitness.split('#')[1])
     

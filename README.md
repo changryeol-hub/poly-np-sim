@@ -62,11 +62,14 @@ project_root/
     │   └─ feasibleGraph.py
     │
     ├─ verifierTM/                             # Turing Machine (TM) verifiers
-    │   ├─ SATFixedStateTM.py
+    │   ├─ SATFixedStateCOTM.py					# certificate-oblivious
+	│   ├─ SATFixedStateOrdinary.py
     │   ├─ SATFixedStateTMWithCertificateCheck.py
-    │   ├─ SATInputDependentTM.py
+	│   ├─ SATInputDependentCOTM.py				# certificate-oblivious
+    │   ├─ SATInputDependentOrdinaryTM.py
     │   ├─ SATInputDependentTMWithCertificateCheck.py
-    │   ├─ SubsetSumTM.py
+    │   ├─ SubsetSumCOTM.py						# certificate-oblivious
+	│   ├─ SubsetSumOrdinaryTM.py
     │   └─ SubsetSumTMWithCertificateCheck.py
     │
     ├─ runners/                                # Execution scripts and data
@@ -82,7 +85,8 @@ project_root/
     │
     └─ tests/                                  # Test and validation scripts
         ├─ sat_test_cases.py
-        ├─ subsetsum_test_cases.py
+        ├─ subsetsum_cotm_test_cases.py
+		├─ subsetsum_ordinary_test_cases.py
         ├─ test_original_sat_fixed.py
         ├─ test_hybrid_fixed(original_feasible).py
         ├─ test_hybrid_dynamic(main_feasible).py
@@ -94,18 +98,18 @@ project_root/
 
 ## Key Features
 
-### Fixed-State SAT Verifier
-- Constant state set, independent of input size.
+### Certificate-Oblivious Fixed-State SAT Verifier
+- Certificate-oblivious, constant state set, independent of input size.
 - Fully compatible with NP verifier simulation framework.
 - Allows testing on larger or specially structured SAT instances.
 - `run_sat_fixed.py` provides both interactive and programmatic usage.
 - Also provides `cnf_file_runner.py` to support the CNF file format
 
-### Input-Dependent SAT Verifier
+### Certificate-Oblivious Input-Dependent SAT Verifier
 - State set depends on the maximum value in the input tape.
 - `run_sat_dynamic.py` provides both interactive and programmatic usage.
 
-### Subset-Sum Verifier
+### Certificate-Oblivious Subset-Sum Verifier
 - Handles classic Subset-Sum instances in the fixed-state framework.
 - `run_subsetsum.py` supports programmatic and interactive execution.
 
@@ -164,16 +168,16 @@ python cnf_file_runner.py path/to/file.cnf --loglevel DEBUG
 - File may optionally end with `%`.
 - `cnf_file_runner.py` converts CNF files into a SAT verifier tape format automatically.
 
-### SumOfSubset Tape Input format:
-- The tape format is `<target>_@_<elements>#<certificate>`.
+### Subset-Sum Tape Input format:
+- The tape format is `<target>_@<elements>#<certificate>`.
 - `target` is the integer sum to achieve.
 - `elements` is a list of integers separated by '_'.
-- `certificate` is the proposed subset (also integers separated by '_') to verify.
+- `certificate` is the proposed subset with mask 'x' for unused elements(also integers separated by '_') to verify.
 - Each input tape must terminate with the '#' symbol.
 
 **Example:**
 ```
-28_@_1_3_5_7_10_20#
+28_@1_3_5_7_10_20#
 ```
 
 ### Sample Inputs
@@ -204,7 +208,7 @@ python cnf_file_runner.py input/sample.cnf --loglevel DEBUG
 For users requiring real-time monitoring or execution constraints, a dedicated **thread-based branch** is provided besides **main branch** for core deterministic polynomial-time logic. 
 - **Purpose:** This branch is separated to maintain core code readability while offering advanced simulation controls.
 - **Key Features:**
-    - **Real-time Status:** Press any key (except Esc) during simulation to view the current total edge count and the size of the candidate queue.
+    - **Real-time Status:** Press `[F7]' key during simulation to view the current total edge count and the size of the candidate queue.
     - **Manual Abort:** Press the `[Esc]` key to immediately terminate the simulation (returns `'User Aborted'`).
     - **Timeout Support:** Pass a `timeout` parameter (in seconds) to `SimulateVerifierForAllCertificates` to prevent indefinite execution (returns `'TimeOut'`).
 - **Dependency:** This feature requires the `pynput` library (`python -m pip install pynput`).

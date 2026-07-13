@@ -80,15 +80,18 @@ def GetStepPendentEdgesWithReachableGraph(G, C, V0, Ef):
         if H.hasEdge(f): continue
         H.addEdge(f)
         u,v=f;
-        if f not in C[i] and G.CountISuccedents(f)==0:
+        
+        IS=G.GetISuccedents(f)
+        if f not in C[i] and len(IS)==0:
             Er.add(f)
         else:
-            T.extend(G.GetISuccedents(f))==0
+            T.extend(IS)
             
-        if v.tier()>0 and G.CountIPrecedents(f)==0:
+        IP=G.GetIPrecedents(f)
+        if v.tier()>0 and len(IP)==0:
             Er.add(f)
         else:
-            T.extend(G.GetIPrecedents(f))==0
+            T.extend(IP)
             
         if f not in Ef:
             En=G.getNextEdges(f); 
@@ -109,8 +112,7 @@ def ComputeFeasibleGraph(G, V0, Ef):     #▷ G: non-empty computation graph
     
     C = ComputeCoverEdges(G,Ef )        #▷ Initialize cover edge set from final edges
     H, Er = GetStepPendentEdgesWithReachableGraph(G, C, V0, Ef)
-
-    
+   
     Ef_=Ef.copy()         
     
     T=collections.deque(Er)
@@ -123,24 +125,22 @@ def ComputeFeasibleGraph(G, V0, Ef):     #▷ G: non-empty computation graph
   
         if not H.isMergingEdge(e):
             E=H.getNextEdges(e); T.extend(E)
-
             
         Es=H.GetISuccedents(e)
         for f in Es:
-            if H.CountIPrecedents(f)==1:
+            if len(H.GetIPrecedents(f))==1:
                 T.append(f)
-
 
         Ep=H.GetIPrecedents(e)
         for f in Ep:
             i=dcg.index(f)
             if f in C[i]: continue
-            if H.CountISuccedents(f)==1:
+            if len(H.GetISuccedents(f))==1:
                 T.append(f)
             
         if not H.isSplittingEdge(e):
             E=list(filter(lambda f: f not in Ef,H.getPrevEdges(e)));
-            T.extend(E)  #Final Edge Should Not be Removed
+            T.extend(E)  # Final Edge Should Not be Removed
             
         H.removeEdge(e)
 

@@ -46,7 +46,7 @@ This file exists primarily as a reference implementation for the
 input-dependent verifier machine described in the previous work.
 """
 
-from . import SATInputDependentTM as baseTM
+from . import SATInputDependentCOTM as baseTM
 
 _BASE_TRANSITIONS = baseTM._TRANSITIONS
     
@@ -72,7 +72,7 @@ ACCEPT_STATE = "Accept"
 REJECT_STATE = "Reject"
 
 inputSymbols="_-&#TF0123456789"
-symbols=inputSymbols+"?!ϵ"
+symbols=inputSymbols+"?!ϵS"
 
 _INPUTCHECK_STATES = [
     "InputCheck",

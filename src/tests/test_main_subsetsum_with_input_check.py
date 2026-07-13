@@ -2,24 +2,24 @@
 test_main_subsetsum_with_input_check.py
 
 Purpose:
-- Regression test for Subset-Sum Fixed-State Turing Machine with input verification
+- Regression test for Subset-Sum Fixed-State Turing Machine with Input Sanitization
 - Separates:
     1) Verifier correctness  : V(x, w)
     2) Solution existence    : ∃w V(x, w)
 
 Input format:
-    Target_@_a_b_c_d#certificate_;
-        Example: 28_@_1_3_5_7_10_20#1_20_7_;
+    Target_@a_b_c_d#certificate
+        Example: 28_@1_3_5_7_10_20#1_x_x_7_xx_20
 
     - '_' : separator
     - '@' : separates target value and set elements
     - '#' : begins certificate section
-    - ';' : terminates certificate
+    - 'x' : masking unused set elements
     - certificate is a selected subset written as numbers
 
 Modes:
     Verifier mode
-        Tape contains explicit certificate ending with ';'
+        The tape contains an explicit certificate of the same length as the input element region
         → runs fixed simulation (m = 0)
 
     Existence mode
@@ -50,7 +50,7 @@ from main.simulateAllCertificatePoly import SimulateVerifierForAllCertificates
 import verifierTM.SubsetSumTMWithCertificateCheck as TM
 import main.log_ext as log_ext
 
-import subsetsum_test_cases as tc
+import subsetsum_cotm_test_cases as tc
 
 # ============================================================
 # Verifier tests

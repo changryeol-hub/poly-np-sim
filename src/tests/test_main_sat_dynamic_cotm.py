@@ -1,8 +1,8 @@
 """
-test_main_sat_dynamic.py
+test_main_sat_dynamic_cotm.py
 
 Purpose:
-- Regression test for SAT Fixed-State Turing Machine
+- Regression test for Certificate-Oblivious SAT Fixed-State Turing Machine
 - Separates:
     1) Verifier correctness  : V(x, w)
     2) SAT existence search : ∃w V(x, w)
@@ -23,7 +23,7 @@ if parent_dir not in sys.path:
 # --- project imports ---
 import main.dynamicComputationGraph as dcg
 from main.simulateAllCertificatePoly import SimulateVerifierForAllCertificates
-import verifierTM.SATInputDependentTM as TM
+import verifierTM.SATInputDependentCOTM as TM
 import main.log_ext as log_ext
 
 import sat_test_cases 

@@ -1,8 +1,8 @@
 """
-Deterministic SAT Verifier Turing Machine (Fixed-State Version)
+Deterministic certificate-oblivious SAT Verifier Turing Machine (Fixed-State Version)
 
 This module implements the fixed-state deterministic Turing machine used in the
-paper to simulate a SAT verifier.  Unlike the input-dependent construction, the
+paper to simulate a ceritificate-oblivious SAT verifier.  Unlike the input-dependent construction, the
 state space is finite and independent of the instance size; arithmetic on
 variable indices is performed symbolically on the tape.
 
@@ -77,43 +77,47 @@ _TRANSITIONS = {
         ("Unknown.S", "&"):("Check.Free", "&", +1),
         ("Unknown.S", "#"):("Fetch", "#", +1),
         
+        ("Skip.S", "0"): ("Skip.S", "_", +1),
+        ("Skip.S", "D"): ("SkipTerm.S", "D", +1),
+        ("Skip.S", "*"): ("Skip.S", "*", +1),
+        ("SkipTerm.S", "D"): ("SkipTerm.S", "D", +1),
+        ("SkipTerm.S","_"):("Skip.S", "_", +1),
         ("Skip.Free", "&"): ("Check.Free", "&", +1),
         ("Skip.Free", "#"): ("Fetch","#", +1),
         ("Skip.Forwarded", "&"): ("Check.Forwarded", "&", +1),
         ("Skip.Forwarded",  "#"): ("Accept", "#", +1),
-        ("Skip.S", "*"): ("Skip.S", "_", +1),
-
+        ("SkipTerm.Free", "&"): ("Check.Free", "&", +1),
+        ("SkipTerm.Free", "#"): ("Fetch","#", +1),
+        ("SkipTerm.Forwarded", "&"): ("Check.Forwarded", "&", +1),
+        ("SkipTerm.Forwarded",  "#"): ("Accept", "#", +1),        
         
-        # Check.Forwarded/Fetch
+        # Fetch
         ("Fetch",  "_"): ("Fetch", "_", +1),
         ("Fetch", "T"): ("Backward.T", "_", -1),
         ("Fetch", "F"): ("Backward.F", "_", -1),
-        ("Ftech", "ϵ"): ("Reject", "ϵ", +1),
+        ("Ftech", "*"): ("Reject", "_", -1),
         
-        
-        # Backward
+        # Backward/Subtraction
         ("Backward.B",  "ϵ"): ("Check.Forwarded", "ϵ", +1),
-        ("BackwardInTerm.B",  "ϵ"): ("Check.Forwarded", "ϵ", +1),
-        ("Backward.B", "*"):("Backward.B", "*", -1),
-        ("BackwardInTerm.B",  "D"): ("BackwardInTerm.B", "D", -1),
-        
-
-        # Subtraction/Backward
         ("Backward.B", "1"): ("BackwardFrom1.B", "0", -1),
         ("Backward.B",  "0"): ("Borrow.B", "9", -1),
         ("Backward.B", "D"): ("BackwardInTerm.B", "D-1", -1),
+        ("Backward.B", "*"):("Backward.B", "*", -1),
+
+        # Borrow/Backward In Term
         ("Borrow.B", "D"): ("BackwardInTerm.B", "D-1", -1),
         ("Borrow.B", "0"): ("Borrow.B", "9", -1),
-        ("BackwardFrom1.B", "D"):("BackwardInTerm.B", "D", -1),        
-        
-        # Assign/Backward
         ("BackwardInTerm.B", "D"): ("BackwardInTerm.B", "D", -1),
         ("BackwardInTerm.B", "_"): ("Backward.B", "_", -1),
         ("BackwardInTerm.B", "&"): ("Backward.B", "&", -1),
         ("BackwardInTerm.B", "-"): ("Backward.B", "-", -1),
+        ("BackwardInTerm.B",  "ϵ"): ("Check.Forwarded", "ϵ", +1),
+        
+        # Assign/Backward From 1
         ("BackwardFrom1.B", "_"):("Assign.B", "_", +1),
         ("BackwardFrom1.B", "-"):("Assign.B", "-", +1),
         ("BackwardFrom1.B", "&"):("Assign.B", "&", +1),
+        ("BackwardFrom1.B", "D"):("BackwardInTerm.B", "D", -1),  
         ("BackwardFrom1.B", "ϵ"):("Assign.B", "ϵ", +1),
         ("Assign.B", "0"):("Backward.B", "B",-1), 
     }

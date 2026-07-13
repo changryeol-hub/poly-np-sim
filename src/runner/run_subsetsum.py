@@ -1,7 +1,7 @@
 """
 run_subsetsum.py
 
-Fixed-state Subset-Sum Verifier Turing Machine Runner.
+Certificate-Oblivous Fixed-state Subset-Sum Verifier Turing Machine Runner.
 
 This script provides a Turing Machine that verifies Subset-Sum instances
 using a fixed-state configuration. It is based on the formal polynomial-time
@@ -10,7 +10,7 @@ simulation framework for NP verifiers.
 Key features:
 - Fixed-state Subset-Sum Verifier Turing Machine: the state set and symbols
   are predefined and independent of the input size.
-- Compatible with the feasible-graph verification framework.
+- Compatible with the NP verifier simulation framework.
 - Supports both interactive input mode and a callable `run(tape_string)` 
   function for programmatic execution.
 - Includes automated tests (`test_machine`) to validate correctness against
@@ -25,13 +25,13 @@ Usage:
     run(tape_string)                     # programmatic execution
 
 Input format:
-- The tape format is `<target>_@_<elements>#<certificate>`.
+- The tape format is `<target>_@<elements>#<certificate>`.
 - `target` is the integer sum to achieve.
 - `elements` is a list of integers separated by '_'.
 - `certificate` is the proposed subset (also integers separated by '_') to verify.
-- Each input tape must terminate with the '#' symbol.
+- Each input tape must terminate with the '#' symbol to decide NP problem.
 Example:
-    "28_@_1_3_5_7_10_20#1_20_7_;"
+    "28_@1_3_5_7_10_20#"   
 """
 import logging as log
 import os, sys
@@ -42,7 +42,7 @@ if parent_dir not in sys.path: sys.path.append(parent_dir)
 
 import main.dynamicComputationGraph as dcg
 from main.simulateAllCertificatePoly import *
-import verifierTM.SubsetSumTM as TM
+import verifierTM.SubsetSumCOTM as TM
 import main.log_ext as log_ext
 
 
@@ -51,23 +51,25 @@ def run(tape_string):
     if (tape_string.find("#")<0 or tape_string.find("@")<0):
         log.warn("Empty or Wrong Input!")
         return None
-    m=tape_string.find("#")-tape_string.find("@");
+    if tape_string.endswith('#'):
+        m=tape_string.find("#")-tape_string.find("@")-1;
+    else: m=0
     result = SimulateVerifierForAllCertificates(tape_string, m, TM.INIT_STATE, TM.inputSymbols, TM.delta, TM.states, 
             TM.symbols, TM.ACCEPT_STATE, TM.REJECT_STATE, TM.certSymbols)
     return result
 
 def test_machine():
-    tape0="28_@_1_3_5_7_10_20#1_20_7_;"
-    tape1="15_@_1_3_5_7_10_20#3_5_7_;"
-    tape2="15_@_1_3_5_7_10_20#5_10_;"
-    tape3="20_@_1_3_5_7_10_20#3_10_7_;"
-    tape4="45_@_1_3_5_37_100_20#3_5_37_;"
-    tape5="100_@_1_3_27_100#37_45_;"   #Reject
-    tape6="82_@_1_3_37_100_45#37_45_;"
-    tape7="18_@_42_20_3_5#5_3_15_;"   #Reject
-    tape8="33_@_42_20_3_5#5_5_3_20_;"  #Reject
-    tape9="15_@_1_3_5_7_10_20#3_5_07_;" #Reject
-    tape10="28_@_42_20_3_5#"
+    tape0="28_@1_3_5_7_10_20#1_x_x_7_xx_20"
+    tape1="15_@1_3_5_7_10_20#x_3_5_7_xx_xx"
+    tape2="15_@1_3_5_7_10_20#x_x_5_x_10_xx"
+    tape3="20_@1_3_5_7_10_20#x_3_x_7_10_xx"
+    tape4="45_@1_3_5_37_100_20#x_3_5_37_xxx_xx"
+    tape5="100_@1_3_27_100#x_x_37_x45"   #Reject
+    tape6="82_@1_3_37_100_45#x_x_37_xxx_45"
+    tape7="18_@42_20_3_5#xx_15_3_5"   #Reject
+    tape8="33_@42_20_3_5#xx_20_3_5"  #Reject
+    tape9="15_@1_3_5_7_10_20#x_3_5_7_x0_x0" #Reject
+    tape10="28_@42_20_3_5#"
     tape=[tape0, tape1,tape2,tape3,tape4,tape5,tape6,tape7,tape8,tape9, tape10]
     answer=[True,True,True,True,True, False, True, False, False, False, True]
 
@@ -79,7 +81,7 @@ def test_machine():
 
 def main_interactive():
     while True:
-        tape=input("Enter input of Sum of Subset(Ex:'28_@_42_20_3_5#').\n")
+        tape=input("Enter input of Sum of Subset(Ex:'28_@42_20_3_5#').\n")
         if "#" not in tape or '@' not in tape:
             print("Empty or Wrong Input!")
             return
