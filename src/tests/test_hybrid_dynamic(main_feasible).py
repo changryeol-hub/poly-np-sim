@@ -79,7 +79,7 @@ if parent_dir not in sys.path:
 # --- project imports ---
 import temp.dynamicComputationGraph as dcg
 from temp.simulateAllCertificatePoly import SimulateVerifierForAllCertificates
-import verifierTM.SATInputDependentTMWithCertificateCheck as TM
+import verifierTM.SATInputDependentCOTM as TM
 import temp.log_ext as log_ext
 
 import sat_test_cases 

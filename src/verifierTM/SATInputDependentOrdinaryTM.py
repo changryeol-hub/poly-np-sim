@@ -1,5 +1,5 @@
 """
-Deterministic Verifier Turing Machine (Core Version)
+Deterministic Verifier Turing Machine (Input-depedent states ordinary Version)
 ---------------------------------------------------
 
 This module specifies the Turing Machine actually used in the construction
@@ -57,7 +57,7 @@ used in the feasible-graph simulation.
 _TRANSITIONS = {
         # Assign.Check
         ("Check",  "_"): ("Check", "_", +1),
-        ("Check",  "-"): ("Not", "-", +1),
+        ("Check",  "-"): ("Not", "_", +1),
         ("Check",  "D"): ("Inc.D","?", +1),
         ("Not",  "D"): ("Inc.D","!", +1),
         ("Skip",  "&"): ("Check", "_", +1),

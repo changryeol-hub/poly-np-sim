@@ -83,10 +83,10 @@ if parent_dir not in sys.path:
 # --- project imports ---
 import temp.dynamicComputationGraph as dcg
 from temp.simulateAllCertificatePoly import SimulateVerifierForAllCertificates
-import verifierTM.SubsetSumTMWithCertificateCheck as TM
+import verifierTM.SubsetSumCOTM as TM
 import temp.log_ext as log_ext
 
-import subsetsum_test_cases as tc
+import subsetsum_cotm_test_cases as tc
 
 # ============================================================
 # Verifier tests

@@ -84,6 +84,9 @@ class TransitionCase(set):
         items=list(filter(lambda x:x.last_state()==P.state and x.last_symbol()==P.symbol, self))
         if(len(items)>0): return items[0]
         else: v=vertex(self,P); self.add(v); return v
+    def __eq__(self, other):
+        return self.index==other.index and self.tier==other.tier and self.state==other.state and self.symbol==other.symbol
+        
 
 class vertex:
     def __init__(self,T,P):
@@ -154,10 +157,11 @@ class EdgeListOf:
         
     def allList(sef):
         return self.left_incoming+self.left_outgoing+self.right_incoming+self.right_outgoing
+        
     def count(self):
-        #print("cont edgelist of ",self.at)
         n=len(self.left_incoming)+len(self.left_outgoing)+len(self.right_incoming)+len(self.right_outgoing)
         return n
+        
     def countPrint(self):
         print("id, count of:",id(self), self.left_incoming,self.left_outgoing,self.right_incoming,self.right_outgoing)
         
@@ -216,7 +220,7 @@ class TierArray(list):
     def __getitem__(self, tier):
         #print("__getitem",self.cell_index, tier, len(self))
         i=len(self)
-        while i<=tier:
+        while tier>=i:
             item={}
             for q in TierArray.states:
                 item[q]={}
@@ -338,7 +342,6 @@ class DynamicComputationGraph:
     def incomingEdgeOf(self, v):
         i=v.index()
         L=self.E[i][v].right_incoming+self.E[i-1][v].left_incoming
-        #print("incoming:",L)
         return list(map(lambda w:(w,v),L))
 
     def outgoingEdgeOf(self, v):
@@ -366,12 +369,14 @@ class DynamicComputationGraph:
         if len(self.E[i][v].right_incoming)>0 and len(self.E[i][v].right_outgoing)>0:
             return True
         return False
+        
     def hasEdge(self,e):
         (u,v)=e
         idx=index(e)
         if(v in self.E[idx][u].right_outgoing): return True 
         if(u in self.E[idx][v].right_incoming): return True
         return False
+        
     def hasIncomingEdge(self, v):
         if(len(self.E[v.index()][v].right_incoming)>0): return True
         if(len(self.E[v.index()-1][v].left_incoming)>0): return True
@@ -400,30 +405,20 @@ class DynamicComputationGraph:
 
     def isSplittingEdge(self,e):
         if not self.hasEdge(e):
-            print("No edge for splitting edge check")
             return False
         u,v=e
         if(u.index()<v.index()):
-            #print("FindFirstMerging e:",e,self.E[u.index()][v].left_incoming)
-            return len(self.E[u.index()][v].right_outgoing)>1
+            return len(self.E[u.index()][u].right_outgoing)>1
         else:
-            
-            #print("FindFirstMerging e:",e,self.E[u.index()][v].right_incoming)
-            return len(self.E[v.index()][v].left_outgoing)>1
-        
-
+            return len(self.E[v.index()][u].left_outgoing)>1
     
     def isMergingEdge(self,e):
         if not self.hasEdge(e):
-            print("No edge for merging edge check")
             return False
         u,v=e
         if(u.index()<v.index()):
-            #print("FindFirstMerging e:",e,self.E[u.index()][v].left_incoming)
             return len(self.E[u.index()][v].left_incoming)>1
         else:
-            
-            #print("FindFirstMerging e:",e,self.E[u.index()][v].right_incoming)
             return len(self.E[v.index()][v].right_incoming)>1
         
     def getNextEdges(self,e):
@@ -454,51 +449,57 @@ class DynamicComputationGraph:
     def IPrecedent(self, v):
         if v.tier()==0 : return set()
         (i,t,q,s)=(v.index(),v.tier()-1,v.last_state(),v.last_symbol())
-        #print("Precedent:",i,t,q,s, self.V[i])
         return self.V[i][t][q][s]
 
     def ISuccedent(self, v):
-        S=[]
+        S=set()
         (i,t)=(v.index(),v.tier()+1)
         s=v.output()
         for q in self.V[i][t]:
+            assert self.V[i][t][q][s] is not None, f"(i,t,q,s):({i},{t},{q},{s})"
             L=list(filter(lambda s:s.pred==v.T, self.V[i][t][q][s]))
-            S.extend(L)
-        return set(S)
-                   
-    def CountIPrecedents(self, e):
-        Es=self.E[min(e[0].index(),e[1].index())]
-        cnt=0
-        for p in self.IPrecedent(e[1]):       # vertex on Precedent of u
-            cnt+=len(Es[p].right_outgoing)+len(Es[p].left_outgoing)
-        return cnt
-                   
-    def GetIPrecedents(self, e):       # return PrecG(e)
-        P = []
-        #print("GetIPrecedents",e)
-        (u, v) = e; i=min(u.index(),v.index())
-        if v.tier()==0: return set()  #floor edge
-        for v_ in self.IPrecedent(v):       # vertex on Precedent of u
-            for (v_,u_) in self.outgoingEdgeOf(v_):
-                if(u_ in self.IPrecedent(u)) or u==u_ or u_.tier()<u.tier()-1:
-                    P.append((v_,u_))
-        return set(P)
+            S.update(L)
+        return S
+                                     
+    def GetIPrecedents(self, e):       # return IPrec(e)
+        (u, v) = e; P = set()
+        if v.tier()==0: return P  # floor edge
         
-    def CountISuccedents(self, e):
-        Es=self.E[min(e[0].index(),e[1].index())]
-        cnt=0
-        for s in self.ISuccedent(e[0]):       # vertex on Precedent of u
-            cnt+=len(Es[s].left_incoming)+len(Es[s].right_incoming)
-        return cnt
-
-    def GetISuccedents(self, e):        #▷ Returns SuccG(e)
-        S =[]
-        (u, v) = e; i=min(u.index(),v.index())
+        Vv=set(); Vipc=set()
+        Q = collections.deque(self.IPrecedent(u))
+        while len(Q)>0:
+            w=Q.popleft()
+            if w in Vv: continue
+            Vv.add(w)
+            if self.isFoldingNode(w):
+                Q.extend(self.IPrecedent(w))
+            else: Vipc.add(w)
+        
+        for v_ in self.IPrecedent(v):       # vertex on IPrecedent of v
+            for (v_, u_) in self.outgoingEdgeOf(v_):
+                if u==u_ or u_ in Vipc: P.add((v_,u_))
+                
+        return P
+        
+    def GetISuccedents(self, e):        # ▷ Returns ISuccG(e)
+        
+        (u, v) = e; S = set()
+        
+        Vv=set(); Visc=set()
+        
+        Q = collections.deque(self.ISuccedent(v))
+        while len(Q)>0:
+            w=Q.popleft()
+            if w in Vv: continue
+            Vv.add(w)
+            if self.isFoldingNode(w):
+                Q.extend(self.ISuccedent(w))
+            else: Visc.add(w)
+        
         for u_ in self.ISuccedent(u):       # vertex on Precedent of u
-            for (v_, w) in self.incomingEdgeOf(u_):
-                if(v_ in self.ISuccedent(v)) or v==v_ or v_.tier()>v.tier()+1:
-                    S.append((v_,u_))        
-        return set(S)
+            for (v_, u_) in self.incomingEdgeOf(u_):
+                if v==v_ or v_ in Visc: S.add((v_,u_))        
+        return S
 
     def existsPathAvodingStartIndex(self,e0,f):
         Q=collections.deque()

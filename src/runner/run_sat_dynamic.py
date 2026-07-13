@@ -1,7 +1,7 @@
 """
 run_sat_dynamic.py
 
-Input-dependent SAT Verifier Turing Machine Runner.
+Certificate-Oblivious Input-dependent SAT Verifier Turing Machine Runner.
 
 This script provides a SAT verifier Turing Machine whose states depend
 on the input size. It is based on the formal polynomial-time simulation 
@@ -29,7 +29,7 @@ Input format:
   '&' as separators between elements. Each input tape must terminate
   with the '#' symbol.
 Example:
-    "-1_3_5&5_2_1&7_9_10&-6_1_-4&2_-6_1#"
+    "-1_3_5&5_2_1&7_9_10&-6_1_-4&2_-6_1#" 
 """
 
 
@@ -42,7 +42,7 @@ if parent_dir not in sys.path: sys.path.append(parent_dir)
 
 import main.dynamicComputationGraph as dcg
 from main.simulateAllCertificatePoly import *
-import verifierTM.SATInputDependentTM as TM
+import verifierTM.SATInputDependentCOTM as TM
 
 import main.log_ext as log_ext
 log=log_ext.get_logger(__name__)
@@ -97,5 +97,3 @@ if __name__ == "__main__":
     args=setup_argument()
     if __debug__: test_machine()
     main_interactive(args.timeout)
-
-

@@ -1,14 +1,14 @@
 """
-test_main_sat_dynamic_with_input_check.py
+test_main_sat_dynamic_ordinary.py
 
 Purpose:
-- Regression test for SAT Fixed-State Turing Machine with Input Sanitization
+- Regression test for Ordinary SAT Fixed-State Turing Machine
 - Separates:
     1) Verifier correctness  : V(x, w)
     2) SAT existence search : ∃w V(x, w)
 
 Usage:
-    $ python test_main_sat_dynamic_with_input_check.py
+    $ python test_main_sat_dynamic.py
 """
 
 import logging as log
@@ -23,7 +23,7 @@ if parent_dir not in sys.path:
 # --- project imports ---
 import main.dynamicComputationGraph as dcg
 from main.simulateAllCertificatePoly import SimulateVerifierForAllCertificates
-import verifierTM.SATInputDependentTMWithCertificateCheck as TM
+import verifierTM.SATInputDependentOrdinaryTM as TM
 import main.log_ext as log_ext
 
 import sat_test_cases 
@@ -40,7 +40,8 @@ def run_verifier_tests():
     ok = True
 
     for i, (tape, expected_bool) in enumerate(verifier_tests):
-        n=sat_test_cases.get_variable_count(tape)   # Used for state-space size, not certificate length
+        n=sat_test_cases.get_variable_count(tape) # Used for state-space size, not certificate length
+
         result = SimulateVerifierForAllCertificates(
             tape,
             0,  # fixed certificate mode
@@ -49,7 +50,8 @@ def run_verifier_tests():
             TM.delta,
             TM.states(n),
             TM.symbols,
-            TM.ACCEPT_STATE, TM.REJECT_STATE
+            TM.ACCEPT_STATE, TM.REJECT_STATE,
+            TM.certSymbols
         )
 
         if (result == 'Yes') != expected_bool:
@@ -80,7 +82,8 @@ def run_sat_tests():
             TM.delta,
             TM.states(m),
             TM.symbols,
-            TM.ACCEPT_STATE, TM.REJECT_STATE
+            TM.ACCEPT_STATE, TM.REJECT_STATE,
+            TM.certSymbols
         )
 
         if (result == 'Yes') != expected_bool:

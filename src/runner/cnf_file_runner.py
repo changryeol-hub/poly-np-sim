@@ -28,7 +28,7 @@ if parent_dir not in sys.path: sys.path.append(parent_dir)
 
 import main.dynamicComputationGraph as dcg
 from main.simulateAllCertificatePoly import *
-import verifierTM.SATFixedStateTM as TM
+import verifierTM.SATFixedStateCOTM as TM
 import main.log_ext as log_ext
 log=log_ext.get_logger(__name__)
 
